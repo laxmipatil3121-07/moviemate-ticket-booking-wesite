@@ -1,0 +1,21 @@
+# Visual Studio & .NET Build Artifacts
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+
+# Logs
+*.log
+server.log
+server_err.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Antigravity internal
+.gemini/
