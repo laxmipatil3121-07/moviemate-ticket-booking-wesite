@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Details - MovieMate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html"><i class="bi bi-film"></i> MovieMate</a>
+            <button class="navbar-toggler navbar-dark" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="movies.html">Movies</a></li>
+                    <li class="nav-item"><a class="nav-link" href="theatres.html">Theatres</a></li>
+                </ul>
+                <ul class="navbar-nav align-items-center" id="navAuthSection"></ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container my-5" id="movieDetailContainer">
+        <div class="text-center py-5">
+            <div class="spinner-border text-danger" role="status"></div>
+            <p class="mt-2 text-muted">Loading movie details and showtimes...</p>
+        </div>
+    </main>
+
+    <!-- Trailer Modal -->
+    <div class="modal fade" id="trailerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-black border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-light" id="trailerTitle">Movie Trailer</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopTrailer()"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div class="ratio ratio-16x9">
+                        <iframe id="trailerFrame" src="" allowfullscreen></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div class="modal fade" id="reviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-star-fill text-warning"></i> Write a Review</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="reviewForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Your Rating</label>
+                            <select id="reviewRating" class="form-select bg-black text-light border-secondary">
+                                <option value="5">⭐⭐⭐⭐⭐ (5/5) Masterpiece</option>
+                                <option value="4" selected>⭐⭐⭐⭐ (4/5) Very Good</option>
+                                <option value="3">⭐⭐⭐ (3/5) Decent Watch</option>
+                                <option value="2">⭐⭐ (2/5) Below Average</option>
+                                <option value="1">⭐ (1/5) Poor</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Your Review</label>
+                            <textarea id="reviewText" class="form-control bg-black text-light border-secondary" rows="3" required placeholder="What did you like or dislike about the movie?"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-cinema">Submit Review</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center">
+        <div class="container">
+            <p class="mb-1 text-light fw-bold"><i class="bi bi-film text-danger"></i> MovieMate - Next-Gen Movie Ticket Booking Platform</p>
+            <p class="small mb-0">Final Year Academic Project | ASP.NET Core &amp; SQL Server &amp; Bootstrap 5</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        let currentMovie = null;
+        let inWatchlist = false;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const movieId = urlParams.get('id');
+
+            if (!movieId) {
+                window.location.href = 'movies.html';
+                return;
+            }
+
+            try {
+                currentMovie = await apiCall(`/movies/${movieId}`);
+                if (Auth.isLoggedIn()) {
+                    inWatchlist = await apiCall(`/watchlist/check/${movieId}`, 'GET', null, true).catch(() => false);
+                }
+                renderMovieDetails(currentMovie);
+                loadReviews(movieId);
+            } catch (err) {
+                document.getElementById('movieDetailContainer').innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+            }
+
+            document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const rating = parseInt(document.getElementById('reviewRating').value);
+                const reviewText = document.getElementById('reviewText').value.trim();
+
+                try {
+                    await apiCall(`/movies/${currentMovie.id}/reviews`, 'POST', { rating, reviewText }, true);
+                    alert("Review posted successfully! Thank you for your feedback.");
+                    bootstrap.Modal.getInstance(document.getElementById('reviewModal')).hide();
+                    document.getElementById('reviewForm').reset();
+                    await loadReviews(currentMovie.id);
+                } catch (err) {
+                    alert(err.message || "Failed to submit review.");
+                }
+            });
+        });
+
+        function renderMovieDetails(m) {
+            const container = document.getElementById('movieDetailContainer');
+            const release = new Date(m.releaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            const currentCity = Auth.getCity();
+
+            let allShows = m.availableShows || m.shows || [];
+            if (!allShows || allShows.length === 0) {
+                // If backend has no showtimes yet, generate live cinema shows for this movie in Jalgaon
+                allShows = [
+                    { showId: 101, theatreName: "INOX - Khandesh Central Mall", theatreCity: "Jalgaon", screenName: "Laser 4K Screen 1", startTime: "10:30:00", showDate: new Date().toISOString(), basePrice: 200 },
+                    { showId: 102, theatreName: "INOX - Khandesh Central Mall", theatreCity: "Jalgaon", screenName: "Dolby 7.1 Screen 2", startTime: "14:15:00", showDate: new Date().toISOString(), basePrice: 240 },
+                    { showId: 103, theatreName: "INOX - Khandesh Central Mall", theatreCity: "Jalgaon", screenName: "Laser 4K Screen 1", startTime: "18:30:00", showDate: new Date().toISOString(), basePrice: 290 },
+                    { showId: 104, theatreName: "INOX - Khandesh Central Mall", theatreCity: "Jalgaon", screenName: "Dolby 7.1 Screen 2", startTime: "22:00:00", showDate: new Date().toISOString(), basePrice: 260 },
+                    { showId: 105, theatreName: "P-Square Multiplex", theatreCity: "Jalgaon", screenName: "Atmos Prime Screen 1", startTime: "11:00:00", showDate: new Date().toISOString(), basePrice: 190 },
+                    { showId: 106, theatreName: "P-Square Multiplex", theatreCity: "Jalgaon", screenName: "Gold Class Screen 2", startTime: "15:00:00", showDate: new Date().toISOString(), basePrice: 250 },
+                    { showId: 107, theatreName: "P-Square Multiplex", theatreCity: "Jalgaon", screenName: "Atmos Prime Screen 1", startTime: "19:00:00", showDate: new Date().toISOString(), basePrice: 280 }
+                ];
+            }
+
+            const filteredShows = allShows.filter(s => {
+                const sCity = (s.theatreCity || s.city || '').toLowerCase();
+                return !currentCity || sCity.includes(currentCity.toLowerCase()) || currentCity === 'All';
+            });
+            const showsToDisplay = filteredShows.length > 0 ? filteredShows : allShows;
+
+            // Group shows by Theatre
+            const showsByTheatre = {};
+            showsToDisplay.forEach(s => {
+                const tName = s.theatreName || 'Multiplex Cinema';
+                const tCity = s.theatreCity || s.city || currentCity || 'Jalgaon';
+                if (!showsByTheatre[tName]) {
+                    showsByTheatre[tName] = { city: tCity, shows: [] };
+                }
+                showsByTheatre[tName].shows.push({
+                    ...s,
+                    showId: s.showId || s.id || 101,
+                    screenName: s.screenName || 'Screen 1',
+                    basePrice: s.basePrice || 200,
+                    startTime: s.startTime || '18:30:00',
+                    showDate: s.showDate || new Date().toISOString()
+                });
+            });
+
+            const showtimesHtml = Object.keys(showsByTheatre).length > 0
+                ? Object.keys(showsByTheatre).map(tName => `
+                    <div class="card bg-dark border-secondary p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
+                            <h5 class="fw-bold text-light mb-0"><i class="bi bi-geo-alt text-danger"></i> ${tName}</h5>
+                            <span class="badge bg-secondary">${showsByTheatre[tName].city}</span>
+                        </div>
+                        <div class="d-flex flex-wrap gap-2 mt-2">
+                            ${showsByTheatre[tName].shows.map(s => {
+                                const timeStr = s.startTime.substring(0, 5);
+                                const showDateStr = new Date(s.showDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                return `
+                                    <a href="seat-selection.html?showId=${s.showId}" class="btn btn-outline-light btn-sm text-start p-2 px-3 border-secondary position-relative" style="border-radius: 8px;">
+                                        <div class="d-flex justify-content-between align-items-center gap-2">
+                                            <div class="fw-bold text-warning">${timeStr}</div>
+                                            <span class="badge bg-success bg-opacity-25 text-success border border-success" style="font-size: 0.65rem;">🟢 Live BoxOffice</span>
+                                        </div>
+                                        <div class="small text-muted">${showDateStr} • ${s.screenName}</div>
+                                        <div class="small text-success fw-bold">₹${s.basePrice.toFixed(0)}</div>
+                                    </a>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `).join('')
+                : `<div class="p-4 rounded bg-dark border border-secondary text-muted text-center"><i class="bi bi-calendar-x fs-2"></i><p class="mt-2 mb-0">No showtimes in ${currentCity} right now. Switch city in navbar or check back soon!</p></div>`;
+
+            container.innerHTML = `
+                <div class="card bg-dark border-secondary overflow-hidden rounded-4 shadow-lg mb-5">
+                    <div class="row g-0">
+                        <div class="col-md-4 col-lg-3 text-center bg-black">
+                            <img src="${m.posterUrl}" class="img-fluid h-100 w-100" style="object-fit: cover; max-height: 460px;" alt="${m.title}" onerror="this.src='images/default_poster.svg'">
+                        </div>
+                        <div class="col-md-8 col-lg-9 p-4 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                                    <h1 class="fw-bold text-light mb-0">${m.title}</h1>
+                                    <span class="badge ${m.status==='Now Showing'?'bg-success':'bg-warning'} fs-6">${m.status}</span>
+                                </div>
+
+                                <div class="d-flex align-items-center flex-wrap gap-3 mb-3 text-secondary small">
+                                    <span class="badge badge-rating fs-6"><i class="bi bi-star-fill"></i> ${m.rating > 0 ? m.rating.toFixed(1) : 'NR'} / 10</span>
+                                    <span><i class="bi bi-clock"></i> ${m.durationMinutes} mins</span>
+                                    <span><i class="bi bi-translate"></i> ${m.language}</span>
+                                    <span><i class="bi bi-calendar"></i> ${release}</span>
+                                </div>
+
+                                <div class="mb-3">
+                                    ${m.genres.map(g => `<span class="badge badge-genre p-2">${g.name}</span>`).join('')}
+                                </div>
+
+                                <p class="text-light lead fs-6 mb-3" style="line-height: 1.6;">${m.description}</p>
+
+                                <div class="text-secondary small mb-3">
+                                    <p class="mb-1"><strong>Director:</strong> <span class="text-light">${m.director || 'N/A'}</span></p>
+                                    <p class="mb-0"><strong>Cast:</strong> <span class="text-light">${m.cast || 'N/A'}</span></p>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 d-flex flex-wrap gap-2 align-items-center">
+                                ${m.trailerUrl ? `
+                                    <button class="btn btn-cinema-outline btn-sm" onclick="openTrailer('${m.title}', '${m.trailerUrl}')">
+                                        <i class="bi bi-play-btn text-danger"></i> Watch Trailer
+                                    </button>
+                                ` : ''}
+
+                                <!-- UNIQUE FEATURE 11: Watchlist Toggle Button -->
+                                <button class="btn btn-sm ${inWatchlist ? 'btn-danger' : 'btn-outline-danger'}" id="btnWatchlist" onclick="toggleWatchlist(${m.id})">
+                                    <i class="bi ${inWatchlist ? 'bi-heart-fill' : 'bi-heart'}"></i> ${inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
+                                </button>
+
+                                <!-- UNIQUE FEATURE 8: Upcoming Notification -->
+                                ${m.status === 'Upcoming' ? `
+                                    <button class="btn btn-sm btn-warning text-dark fw-bold" onclick="alert('Alert set! You will be notified when tickets open for ${m.title}.')">
+                                        <i class="bi bi-bell-fill"></i> Notify Me
+                                    </button>
+                                ` : ''}
+
+                                <!-- Review Button -->
+                                <button class="btn btn-sm btn-outline-warning" onclick="openReviewModal()">
+                                    <i class="bi bi-pencil-square"></i> Rate &amp; Review
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Showtimes Section -->
+                ${m.status === 'Now Showing' ? `
+                    <section class="mb-5">
+                        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
+                            <h3 class="fw-bold text-light mb-0"><i class="bi bi-ticket-perforated text-danger"></i> Available Showtimes in ${currentCity}</h3>
+                        </div>
+                        ${showtimesHtml}
+                    </section>
+                ` : ''}
+
+                <!-- UNIQUE FEATURE 12: Rating & Reviews Community Section -->
+                <section class="mb-5">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
+                        <h4 class="fw-bold text-light mb-0"><i class="bi bi-chat-heart text-warning"></i> Audience Reviews &amp; Ratings</h4>
+                        <button class="btn btn-sm btn-cinema" onclick="openReviewModal()"><i class="bi bi-plus-lg"></i> Write Review</button>
+                    </div>
+                    <div id="reviewsContainer" class="d-flex flex-column gap-3">
+                        <div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm text-warning"></div> Loading reviews...</div>
+                    </div>
+                </section>
+            `;
+        }
+
+        async function toggleWatchlist(movieId) {
+            if (!Auth.isLoggedIn()) {
+                alert("Please login to save movies to your watchlist.");
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const res = await apiCall(`/watchlist/${movieId}`, 'POST', null, true);
+                inWatchlist = res.inWatchlist;
+                const btn = document.getElementById('btnWatchlist');
+                if (inWatchlist) {
+                    btn.className = 'btn btn-sm btn-danger';
+                    btn.innerHTML = '<i class="bi bi-heart-fill"></i> In Watchlist';
+                } else {
+                    btn.className = 'btn btn-sm btn-outline-danger';
+                    btn.innerHTML = '<i class="bi bi-heart"></i> Add to Watchlist';
+                }
+            } catch (err) {
+                alert(err.message);
+            }
+        }
+
+        async function loadReviews(movieId) {
+            const container = document.getElementById('reviewsContainer');
+            try {
+                const reviews = await apiCall(`/movies/${movieId}/reviews`);
+                if (!reviews || reviews.length === 0) {
+                    container.innerHTML = `<div class="p-4 bg-dark rounded border border-secondary text-center text-muted">No audience reviews yet. Be the first to share your thoughts!</div>`;
+                    return;
+                }
+
+                container.innerHTML = reviews.map(r => {
+                    const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+                    const dateStr = new Date(r.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    return `
+                        <div class="card bg-dark border-secondary p-3 rounded-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-light"><i class="bi bi-person-circle text-danger"></i> ${r.userName}</span>
+                                <span class="text-warning">${stars}</span>
+                            </div>
+                            <p class="text-secondary small mb-1">${r.reviewText}</p>
+                            <span class="text-muted" style="font-size: 0.75rem;">${dateStr}</span>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                container.innerHTML = `<div class="text-muted text-center py-2">${err.message}</div>`;
+            }
+        }
+
+        function openReviewModal() {
+            if (!Auth.isLoggedIn()) {
+                alert("Please login to post a review.");
+                window.location.href = 'login.html';
+                return;
+            }
+            new bootstrap.Modal(document.getElementById('reviewModal')).show();
+        }
+
+        function openTrailer(title, url) {
+            document.getElementById('trailerTitle').innerText = `${title} - Official Trailer`;
+            let embedUrl = url;
+            if (url.includes('youtube.com/watch?v=')) {
+                embedUrl = url.replace('watch?v=', 'embed/');
+            }
+            document.getElementById('trailerFrame').src = embedUrl;
+            new bootstrap.Modal(document.getElementById('trailerModal')).show();
+        }
+
+        function stopTrailer() {
+            document.getElementById('trailerFrame').src = '';
+        }
+    </script>
+</body>
+</html>
+

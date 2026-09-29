@@ -1,0 +1,247 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Summary - MovieMate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container">
+            <a class="navbar-brand" href="index.html"><i class="bi bi-film"></i> MovieMate</a>
+            <span class="text-muted small">Step 2 of 3: Order Summary, Snacks &amp; Offers</span>
+            <a href="javascript:history.back()" class="btn btn-sm btn-cinema-outline"><i class="bi bi-arrow-left"></i> Back to Seats</a>
+        </div>
+    </nav>
+
+    <div class="container my-5" style="max-width: 850px;">
+        <div class="card bg-dark border-secondary rounded-4 shadow-lg overflow-hidden">
+            <div class="card-header bg-black border-secondary p-4 d-flex justify-content-between align-items-center">
+                <h4 class="fw-bold text-light mb-0"><i class="bi bi-receipt text-danger"></i> Booking Summary</h4>
+                <span class="badge bg-danger">Hold Active</span>
+            </div>
+            <div class="card-body p-4" id="summaryCardBody">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-danger"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        let bookingData = null;
+        let appliedCoupon = null; // { code, discount }
+        const snacksCatalog = [
+            { id: 'popcorn', name: 'Caramel Tub Popcorn', price: 190, image: 'images/food/popcorn.jpg', desc: 'Fresh & Crunchy Golden Caramel' },
+            { id: 'pepsi', name: 'Pepsi Large (600ml)', price: 110, image: 'images/food/pepsi.jpg', desc: 'Chilled Fizzy Soda with Ice' },
+            { id: 'nachos', name: 'Cheesy Nachos with Dip', price: 210, image: 'images/food/nachos.jpg', desc: 'Crispy Tortilla with Warm Cheese Dip' },
+            { id: 'combo', name: 'Mega Combo (Popcorn + 2 Drinks)', price: 340, image: 'images/food/combo.jpg', desc: 'Blockbuster Value Pack for Two' },
+            { id: 'burger', name: 'Crispy Multiplex Burger', price: 180, image: 'images/food/burger.jpg', desc: 'Grilled Veg/Paneer with Mayo' },
+            { id: 'coffee', name: 'Iced Cold Coffee', price: 140, image: 'images/food/coffee.jpg', desc: 'Rich Frothy Coffee with Choco Sprinkles' }
+        ];
+        let snacksSelected = { popcorn: 0, pepsi: 0, nachos: 0, combo: 0, burger: 0, coffee: 0 };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!Auth.isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const raw = sessionStorage.getItem('pendingBooking');
+            if (!raw) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            bookingData = JSON.parse(raw);
+            renderSummary();
+        });
+
+        function renderSummary() {
+            const show = bookingData.show;
+            const ticketCount = bookingData.seatIds.length;
+            const convenienceFee = ticketCount * 30.00;
+
+            let snacksTotal = 0;
+            snacksCatalog.forEach(s => {
+                snacksTotal += snacksSelected[s.id] * s.price;
+            });
+
+            const discount = appliedCoupon ? appliedCoupon.discount : 0;
+            const subtotalPlusSnacks = bookingData.subTotal + convenienceFee + snacksTotal;
+            const totalAmount = Math.max(0, subtotalPlusSnacks - discount);
+
+            // Save to pendingBooking
+            bookingData.convenienceFee = convenienceFee;
+            bookingData.snacksTotal = snacksTotal;
+            bookingData.snacks = snacksSelected;
+            bookingData.discountAmount = discount;
+            bookingData.couponCode = appliedCoupon ? appliedCoupon.code : null;
+            bookingData.totalAmount = totalAmount;
+            sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
+
+            const showDateStr = new Date(show.showDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            const timeStr = show.startTime.substring(0, 5);
+
+            document.getElementById('summaryCardBody').innerHTML = `
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3 text-center">
+                        <img src="${show.moviePosterUrl}" class="rounded-3 shadow w-100" style="max-height: 230px; object-fit: cover;" alt="${show.movieTitle}" onerror="this.src='images/default_poster.svg'">
+                    </div>
+                    <div class="col-md-9">
+                        <h3 class="fw-bold text-light mb-1">${show.movieTitle}</h3>
+                        <p class="text-danger fw-bold mb-2"><i class="bi bi-geo-alt"></i> ${show.theatreName} (${show.theatreCity})</p>
+                        <div class="text-muted small mb-3">
+                            <div><i class="bi bi-display"></i> <strong>Screen:</strong> ${show.screenName}</div>
+                            <div><i class="bi bi-calendar"></i> <strong>Date:</strong> ${showDateStr}</div>
+                            <div><i class="bi bi-clock"></i> <strong>Time:</strong> ${timeStr}</div>
+                        </div>
+                        <div class="p-2 px-3 rounded bg-black border border-secondary d-inline-block">
+                            <span class="text-muted small">Selected Seats:</span>
+                            <span class="text-warning fw-bold fs-6 ms-2">${bookingData.seatCodes.join(', ')}</span>
+                            <span class="badge bg-secondary ms-2">${ticketCount} Ticket(s)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-secondary my-4">
+
+                <!-- UNIQUE FEATURE 5: F&B Snacks Section -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-light mb-0"><i class="bi bi-cup-straw text-warning"></i> Cinema Food &amp; Combos</h5>
+                        <span class="badge bg-dark border border-secondary text-warning small">Optional Add-on</span>
+                    </div>
+
+                    <div class="row g-3">
+                        ${snacksCatalog.map(item => `
+                            <div class="col-sm-6">
+                                <div class="p-2 px-3 bg-black rounded-3 border border-secondary d-flex justify-content-between align-items-center shadow-sm">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <img src="${item.image}" alt="${item.name}" class="rounded-3 shadow" style="width: 58px; height: 58px; object-fit: cover; border: 1px solid #334155;">
+                                        <div>
+                                            <div class="fw-bold text-light small">${item.name}</div>
+                                            <div class="text-secondary" style="font-size: 0.72rem;">${item.desc}</div>
+                                            <div class="text-success small fw-bold mt-0.5">₹${item.price}</div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button class="btn btn-sm btn-outline-secondary px-2 py-0 fw-bold" onclick="changeSnack('${item.id}', -1)">-</button>
+                                        <span class="fw-bold text-light small px-1" id="count-${item.id}">${snacksSelected[item.id] || 0}</span>
+                                        <button class="btn btn-sm btn-outline-secondary px-2 py-0 fw-bold" onclick="changeSnack('${item.id}', 1)">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <hr class="border-secondary my-4">
+
+                <!-- UNIQUE FEATURE 6: Offers & Coupons -->
+                <div class="mb-4">
+                    <h5 class="fw-bold text-light mb-3"><i class="bi bi-tag text-danger"></i> Offers &amp; Promo Coupons</h5>
+                    
+                    <div class="input-group mb-2">
+                        <input type="text" id="couponInput" class="form-control bg-black text-light border-secondary text-uppercase" placeholder="Enter coupon code (e.g. FIRSTBOOK)" value="${appliedCoupon ? appliedCoupon.code : ''}" ${appliedCoupon ? 'disabled' : ''}>
+                        ${appliedCoupon ? `
+                            <button class="btn btn-outline-danger" onclick="removeCoupon()">Remove</button>
+                        ` : `
+                            <button class="btn btn-cinema" onclick="applyCoupon()">Apply Coupon</button>
+                        `}
+                    </div>
+
+                    <div id="couponMessage" class="${appliedCoupon ? 'text-success fw-bold' : 'text-muted'} small mb-2">
+                        ${appliedCoupon ? `<i class="bi bi-check-circle-fill"></i> ${appliedCoupon.message}` : 'Click a popular coupon code to apply:'}
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge bg-black border border-secondary text-light p-2" style="cursor: pointer;" onclick="quickCoupon('FIRSTBOOK')">🏷️ FIRSTBOOK (20% OFF)</span>
+                        <span class="badge bg-black border border-secondary text-light p-2" style="cursor: pointer;" onclick="quickCoupon('MOVIE50')">🏷️ MOVIE50 (Flat ₹50 OFF)</span>
+                        <span class="badge bg-black border border-secondary text-light p-2" style="cursor: pointer;" onclick="quickCoupon('WEEKEND')">🏷️ WEEKEND (15% OFF)</span>
+                    </div>
+                </div>
+
+                <hr class="border-secondary my-4">
+
+                <!-- Price Breakdown -->
+                <h5 class="fw-bold text-light mb-3">Payment Summary</h5>
+                <div class="bg-black p-3 rounded-3 border border-secondary mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Tickets Subtotal (${ticketCount} seats)</span>
+                        <span class="text-light fw-bold">₹${bookingData.subTotal.toFixed(2)}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Convenience Fee (₹30 / ticket)</span>
+                        <span class="text-light">₹${convenienceFee.toFixed(2)}</span>
+                    </div>
+                    ${snacksTotal > 0 ? `
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Food &amp; Beverage Combos</span>
+                            <span class="text-warning fw-bold">+ ₹${snacksTotal.toFixed(2)}</span>
+                        </div>
+                    ` : ''}
+                    ${discount > 0 ? `
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-success fw-bold">Promo Coupon Discount (${appliedCoupon.code})</span>
+                            <span class="text-success fw-bold">- ₹${discount.toFixed(2)}</span>
+                        </div>
+                    ` : ''}
+                    <hr class="border-secondary my-2">
+                    <div class="d-flex justify-content-between fs-5 fw-bold">
+                        <span class="text-light">Total Amount Payable</span>
+                        <span class="text-success">₹${totalAmount.toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="seat-selection.html?showId=${show.id}" class="btn btn-cinema-outline"><i class="bi bi-arrow-left"></i> Change Seats</a>
+                    <a href="payment.html" class="btn btn-cinema btn-lg px-4"><i class="bi bi-credit-card"></i> Proceed to Payment</a>
+                </div>
+            `;
+        }
+
+        function changeSnack(id, delta) {
+            const current = snacksSelected[id] || 0;
+            const updated = Math.max(0, current + delta);
+            snacksSelected[id] = updated;
+            renderSummary();
+        }
+
+        function quickCoupon(code) {
+            document.getElementById('couponInput').value = code;
+            applyCoupon();
+        }
+
+        async function applyCoupon() {
+            const code = document.getElementById('couponInput').value.trim().toUpperCase();
+            if (!code) return;
+
+            try {
+                const res = await apiCall('/coupons/validate', 'POST', { code: code, subTotal: bookingData.subTotal });
+                if (res.valid) {
+                    appliedCoupon = { code: res.code, discount: res.discountAmount, message: res.message };
+                } else {
+                    appliedCoupon = null;
+                    alert(res.message || "Invalid coupon.");
+                }
+                renderSummary();
+            } catch (err) {
+                alert(err.message || "Failed to validate coupon.");
+            }
+        }
+
+        function removeCoupon() {
+            appliedCoupon = null;
+            renderSummary();
+        }
+    </script>
+</body>
+</html>
+

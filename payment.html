@@ -1,0 +1,180 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulated Payment - MovieMate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container">
+            <a class="navbar-brand" href="index.html"><i class="bi bi-film"></i> MovieMate</a>
+            <span class="text-muted small">Step 3 of 3: Payment Gateway (Simulated)</span>
+        </div>
+    </nav>
+
+    <div class="container my-5" style="max-width: 700px;">
+        <!-- Academic Demo Disclaimer Alert -->
+        <div class="alert alert-warning d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+            <div>
+                <strong>Academic Demonstration:</strong> This is a simulated payment gateway for a college project. No real monetary transactions or banking data are processed.
+            </div>
+        </div>
+
+        <div class="card bg-dark border-secondary rounded-4 shadow-lg p-4">
+            <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-3 mb-4">
+                <h4 class="fw-bold text-light mb-0"><i class="bi bi-wallet2 text-danger"></i> Choose Payment Method</h4>
+                <div class="text-end">
+                    <span class="text-muted small">Payable:</span>
+                    <span class="text-success fw-bold fs-4 ms-2" id="payableAmountDisplay">₹0.00</span>
+                </div>
+            </div>
+
+            <div id="paymentErrorBox" class="alert alert-danger d-none" role="alert"></div>
+
+            <!-- Payment Methods Tabs -->
+            <ul class="nav nav-pills nav-fill mb-4 bg-black p-1 rounded-3 border border-secondary" id="paymentTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active text-light" id="upi-tab" data-bs-toggle="tab" data-bs-target="#upiTab" type="button">
+                        <i class="bi bi-qr-code"></i> UPI / QR
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link text-light" id="card-tab" data-bs-toggle="tab" data-bs-target="#cardTab" type="button">
+                        <i class="bi bi-credit-card"></i> Card (Debit/Credit)
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link text-light" id="counter-tab" data-bs-toggle="tab" data-bs-target="#counterTab" type="button">
+                        <i class="bi bi-shop"></i> Pay at Counter
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content mb-4" id="paymentTabsContent">
+                <!-- UPI Tab -->
+                <div class="tab-pane fade show active text-center p-3" id="upiTab">
+                    <p class="text-muted small mb-3">Scan this QR code using any UPI App (Google Pay, PhonePe, Paytm)</p>
+                    <div class="p-2 bg-white d-inline-block rounded-3 shadow mb-3">
+                        <img src="images/upi_qr.jpg" alt="UPI QR Code" class="img-fluid rounded" style="width: 180px; height: 180px; object-fit: contain;">
+                    </div>
+                    <div class="text-secondary small">
+                        <i class="bi bi-qr-code-scan text-warning"></i> Open any UPI Scanner &amp; Scan to Pay
+                    </div>
+                </div>
+
+                <!-- Card Tab -->
+                <div class="tab-pane fade p-2" id="cardTab">
+                    <div class="mb-3">
+                        <label class="form-label text-light small fw-bold">Card Number</label>
+                        <input type="text" class="form-control bg-black text-light border-secondary" placeholder="4532 •••• •••• 8912" value="4532 8901 2345 6789">
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label text-light small fw-bold">Expiry Date</label>
+                            <input type="text" class="form-control bg-black text-light border-secondary" placeholder="MM/YY" value="12/28">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-light small fw-bold">CVV</label>
+                            <input type="password" class="form-control bg-black text-light border-secondary" placeholder="•••" value="123">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Counter Tab -->
+                <div class="tab-pane fade p-3 text-center" id="counterTab">
+                    <i class="bi bi-ticket-detailed fs-1 text-warning"></i>
+                    <p class="text-light mt-2 mb-1 fw-bold">Reserve Now &amp; Pay at Cinema Box Office</p>
+                    <p class="text-muted small">Tickets will be held until 30 minutes before showtime.</p>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-grid gap-2">
+                <button class="btn btn-cinema btn-lg py-3 fw-bold" id="btnPay" onclick="processPayment(true)">
+                    <span id="btnPayText"><i class="bi bi-shield-check"></i> Complete Booking &amp; Pay</span>
+                    <span id="btnPaySpinner" class="spinner-border spinner-border-sm d-none"></span>
+                </button>
+                <button class="btn btn-outline-danger btn-sm" onclick="processPayment(false)">
+                    <i class="bi bi-x-circle"></i> Test Failed Payment Simulation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        let bookingData = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!Auth.isLoggedIn()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const raw = sessionStorage.getItem('pendingBooking');
+            if (!raw) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            bookingData = JSON.parse(raw);
+            document.getElementById('payableAmountDisplay').innerText = `₹${bookingData.totalAmount.toFixed(2)}`;
+        });
+
+        async function processPayment(isSuccessSimulation) {
+            const errBox = document.getElementById('paymentErrorBox');
+            const btnText = document.getElementById('btnPayText');
+            const btnSpinner = document.getElementById('btnPaySpinner');
+
+            errBox.className = 'alert alert-danger d-none';
+            btnText.classList.add('d-none');
+            btnSpinner.classList.remove('d-none');
+
+            if (!isSuccessSimulation) {
+                setTimeout(() => {
+                    errBox.className = 'alert alert-danger d-block';
+                    errBox.innerText = 'Payment failed: Simulation trigger failed. Your card or account was not charged.';
+                    btnText.classList.remove('d-none');
+                    btnSpinner.classList.add('d-none');
+                }, 1000);
+                return;
+            }
+
+            // Determine active payment method tab
+            let method = 'UPI';
+            if (document.getElementById('card-tab').classList.contains('active')) method = 'Credit/Debit Card';
+            if (document.getElementById('counter-tab').classList.contains('active')) method = 'Counter';
+
+            const payload = {
+                showId: bookingData.show.id,
+                seatIds: bookingData.seatIds,
+                paymentMethod: method
+            };
+
+            try {
+                // Call POST /api/bookings with backend concurrency seat check
+                const confirmedBooking = await apiCall('/bookings', 'POST', payload, true);
+
+                // Save confirmed booking and clear pending
+                sessionStorage.removeItem('pendingBooking');
+                sessionStorage.setItem('confirmedBooking', JSON.stringify(confirmedBooking));
+
+                window.location.href = 'booking-confirmation.html';
+            } catch (err) {
+                errBox.className = 'alert alert-danger d-block';
+                errBox.innerText = err.message || 'Seat booking failed. The selected seats may have already been booked by another user!';
+                btnText.classList.remove('d-none');
+                btnSpinner.classList.add('d-none');
+            }
+        }
+    </script>
+</body>
+</html>
+

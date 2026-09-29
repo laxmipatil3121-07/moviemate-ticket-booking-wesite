@@ -1,0 +1,146 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Confirmed - MovieMate E-Ticket</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        @media print {
+            body { background: #fff !important; color: #000 !important; }
+            .no-print { display: none !important; }
+            .ticket-card { border: 2px dashed #000 !important; background: #fff !important; color: #000 !important; box-shadow: none !important; }
+            .text-light { color: #000 !important; }
+            .text-muted { color: #555 !important; }
+            .bg-black { background: #eee !important; color: #000 !important; }
+        }
+        .ticket-card {
+            background-color: var(--card-bg);
+            border: 2px dashed var(--card-border);
+            border-radius: 20px;
+        }
+        .qr-wrapper {
+            background: #fff;
+            padding: 10px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-custom no-print">
+        <div class="container">
+            <a class="navbar-brand" href="index.html"><i class="bi bi-film"></i> MovieMate</a>
+            <a href="index.html" class="btn btn-sm btn-cinema-outline"><i class="bi bi-house"></i> Back to Home</a>
+        </div>
+    </nav>
+
+    <div class="container my-5" style="max-width: 800px;">
+        <!-- Success Banner -->
+        <div class="text-center mb-4 no-print">
+            <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-25 text-success rounded-circle mb-3" style="width: 70px; height: 70px;">
+                <i class="bi bi-check-lg fs-1"></i>
+            </div>
+            <h2 class="fw-bold text-light">Booking Confirmed!</h2>
+            <p class="text-muted">Your tickets are locked and payment was successfully simulated.</p>
+        </div>
+
+        <!-- E-Ticket Card -->
+        <div class="ticket-card p-4 shadow-lg mb-4" id="ticketContainer">
+            <div class="text-center py-5">
+                <div class="spinner-border text-danger"></div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="d-flex justify-content-center gap-3 no-print">
+            <button class="btn btn-cinema-outline" onclick="window.print()">
+                <i class="bi bi-printer"></i> Print / Save as PDF
+            </button>
+            <a href="my-bookings.html" class="btn btn-cinema">
+                <i class="bi bi-ticket-perforated"></i> View in My Bookings
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const raw = sessionStorage.getItem('confirmedBooking');
+            if (!raw) {
+                alert("No confirmation data found.");
+                window.location.href = 'index.html';
+                return;
+            }
+
+            const b = JSON.parse(raw);
+            const dateStr = new Date(b.showDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            const timeStr = b.startTime.substring(0, 5);
+
+            // UNIQUE FEATURE: Real QR Code generation for ticket verification
+            const qrData = encodeURIComponent(`MOVIEMATE E-TICKET VERIFIED\nRef: ${b.bookingNumber}\nMovie: ${b.movieTitle}\nTheatre: ${b.theatreName}\nScreen: ${b.screenName}\nSeats: ${b.seats.join(', ')}\nDate: ${dateStr} ${timeStr}\nCustomer: ${b.customerName}\nStatus: ${b.status}`);
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${qrData}`;
+
+            document.getElementById('ticketContainer').innerHTML = `
+                <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-3 mb-3">
+                    <div>
+                        <div class="navbar-brand text-danger fw-bold fs-4 mb-0"><i class="bi bi-film"></i> MovieMate E-Ticket</div>
+                        <span class="text-muted small">Booking Reference: <strong class="text-light">${b.bookingNumber}</strong></span>
+                    </div>
+                    <span class="badge bg-success fs-6"><i class="bi bi-check-circle"></i> ${b.status}</span>
+                </div>
+
+                <div class="row g-4 align-items-center">
+                    <div class="col-md-3 text-center">
+                        <img src="${b.posterUrl}" class="rounded-3 shadow w-100" style="max-height: 220px; object-fit: cover;" alt="${b.movieTitle}" onerror="this.src='images/default_poster.svg'">
+                    </div>
+                    <div class="col-md-6">
+                        <h3 class="fw-bold text-light mb-1">${b.movieTitle}</h3>
+                        <p class="text-danger fw-bold mb-1"><i class="bi bi-geo-alt"></i> ${b.theatreName}</p>
+                        <div class="text-muted small mb-3">${b.theatreAddress}</div>
+
+                        <div class="row g-2 my-2 text-light small">
+                            <div class="col-6"><strong>Auditorium:</strong> ${b.screenName}</div>
+                            <div class="col-6"><strong>Date:</strong> ${dateStr}</div>
+                            <div class="col-6"><strong>Showtime:</strong> ${timeStr}</div>
+                            <div class="col-6"><strong>Tickets:</strong> ${b.seats.length} Person(s)</div>
+                        </div>
+
+                        <div class="p-2 px-3 rounded bg-black border border-secondary text-light mt-3">
+                            <span class="text-muted small">Confirmed Seats:</span>
+                            <span class="text-warning fw-bold fs-5 ms-2">${b.seats.join(', ')}</span>
+                        </div>
+                    </div>
+
+                    <!-- UNIQUE FEATURE: Scannable QR Code -->
+                    <div class="col-md-3 text-center border-start border-secondary">
+                        <div class="qr-wrapper shadow-sm mb-2">
+                            <img src="${qrCodeUrl}" alt="Scannable Ticket QR" class="img-fluid" style="width: 130px; height: 130px;">
+                        </div>
+                        <div class="small text-muted" style="font-size: 0.75rem;">
+                            <i class="bi bi-qr-code-scan text-warning"></i> Scan with Phone to Verify Ticket
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-secondary my-3">
+
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 text-muted small">
+                    <div>
+                        <div><strong>Ticket Holder:</strong> ${b.customerName} (${b.customerEmail})</div>
+                        <div><strong>Transaction ID:</strong> ${b.transactionId} (${b.paymentMethod})</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="text-muted">Total Amount Paid:</div>
+                        <div class="text-success fw-bold fs-4">₹${b.totalAmount.toFixed(2)}</div>
+                    </div>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,157 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compare Movies - MovieMate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html"><i class="bi bi-film"></i> MovieMate</a>
+            <div class="collapse navbar-collapse" id="navMenu">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="movies.html">Movies</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="compare.html">Compare</a></li>
+                </ul>
+                <ul class="navbar-nav align-items-center" id="navAuthSection"></ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <div class="text-center mb-5">
+            <span class="badge bg-danger mb-2 px-3 py-2">UNIQUE FEATURE</span>
+            <h2 class="fw-bold text-light"><i class="bi bi-arrow-left-right text-danger"></i> Movie Side-by-Side Comparison</h2>
+            <p class="text-muted">Compare up to 3 movies to decide what to watch this weekend!</p>
+        </div>
+
+        <!-- Movie Selectors -->
+        <div class="card bg-dark border-secondary p-4 rounded-4 shadow mb-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <label class="form-label text-light small fw-bold">Select Movie 1</label>
+                    <select id="mSelect1" class="form-select bg-black text-light border-secondary" onchange="updateComparison()"></select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label text-light small fw-bold">Select Movie 2</label>
+                    <select id="mSelect2" class="form-select bg-black text-light border-secondary" onchange="updateComparison()"></select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label text-light small fw-bold">Select Movie 3 (Optional)</label>
+                    <select id="mSelect3" class="form-select bg-black text-light border-secondary" onchange="updateComparison()">
+                        <option value="">None</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Table Container -->
+        <div class="card bg-dark border-secondary rounded-4 shadow overflow-hidden" id="compareCard">
+            <div class="table-responsive">
+                <table class="table table-dark table-bordered border-secondary mb-0 align-middle text-center">
+                    <tbody id="compareTableBody">
+                        <tr><td class="text-center py-5">Loading comparison...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        let allMovies = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                allMovies = await apiCall('/movies');
+                populateDropdowns();
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const m1 = urlParams.get('movie1');
+                if (m1) document.getElementById('mSelect1').value = m1;
+
+                updateComparison();
+            } catch (err) {
+                console.error(err);
+            }
+        });
+
+        function populateDropdowns() {
+            const s1 = document.getElementById('mSelect1');
+            const s2 = document.getElementById('mSelect2');
+            const s3 = document.getElementById('mSelect3');
+
+            allMovies.forEach((m, idx) => {
+                const opt1 = new Option(m.title, m.id);
+                const opt2 = new Option(m.title, m.id);
+                const opt3 = new Option(m.title, m.id);
+
+                s1.add(opt1);
+                s2.add(opt2);
+                s3.add(opt3);
+            });
+
+            if (allMovies.length >= 2) {
+                s1.selectedIndex = 0;
+                s2.selectedIndex = 1;
+            }
+        }
+
+        function updateComparison() {
+            const id1 = parseInt(document.getElementById('mSelect1').value);
+            const id2 = parseInt(document.getElementById('mSelect2').value);
+            const id3 = parseInt(document.getElementById('mSelect3').value);
+
+            const selected = [
+                allMovies.find(m => m.id === id1),
+                allMovies.find(m => m.id === id2),
+                id3 ? allMovies.find(m => m.id === id3) : null
+            ].filter(Boolean);
+
+            const tbody = document.getElementById('compareTableBody');
+            if (selected.length < 2) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4">Please select at least 2 movies to compare.</td></tr>';
+                return;
+            }
+
+            const headerHtml = `
+                <tr>
+                    <th class="bg-black text-secondary" style="width: 180px;">Criteria</th>
+                    ${selected.map(m => `
+                        <th class="bg-black">
+                            <img src="${m.posterUrl}" class="rounded-3 shadow mb-2" style="width: 130px; height: 180px; object-fit: cover;" alt="${m.title}" onerror="this.src='images/default_poster.svg'">
+                            <h5 class="fw-bold text-light mb-1">${m.title}</h5>
+                            <span class="badge ${m.status==='Now Showing'?'bg-success':'bg-warning'}">${m.status}</span>
+                        </th>
+                    `).join('')}
+                </tr>
+            `;
+
+            const rows = [
+                { label: 'Audience Rating', render: m => `<span class="badge badge-rating fs-6"><i class="bi bi-star-fill"></i> ${m.rating.toFixed(1)} / 10</span>` },
+                { label: 'Genres', render: m => m.genres.map(g => `<span class="badge badge-genre">${g.name}</span>`).join(' ') },
+                { label: 'Languages', render: m => `<span class="text-light">${m.language}</span>` },
+                { label: 'Runtime Duration', render: m => `<span class="text-light">${m.durationMinutes} mins</span>` },
+                { label: 'Director', render: m => `<span class="text-light">${m.director || 'N/A'}</span>` },
+                { label: 'Lead Cast', render: m => `<span class="text-secondary small">${m.cast || 'N/A'}</span>` },
+                { label: 'Action', render: m => m.status === 'Now Showing' ? `<a href="movie-details.html?id=${m.id}" class="btn btn-cinema btn-sm"><i class="bi bi-ticket"></i> Book Now</a>` : `<a href="movie-details.html?id=${m.id}" class="btn btn-cinema-outline btn-sm">Details</a>` }
+            ];
+
+            tbody.innerHTML = headerHtml + rows.map(r => `
+                <tr>
+                    <td class="fw-bold text-secondary text-start ps-3 bg-black">${r.label}</td>
+                    ${selected.map(m => `<td>${r.render(m)}</td>`).join('')}
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Seats - MovieMate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-custom">
+        <div class="container">
+            <a class="navbar-brand" href="index.html"><i class="bi bi-film"></i> MovieMate</a>
+            <div class="badge bg-danger bg-opacity-75 border border-danger p-2 px-3 fs-6">
+                <i class="bi bi-stopwatch"></i> Seats Held For: <span id="holdTimer" class="fw-bold">10:00</span>
+            </div>
+            <a href="javascript:history.back()" class="btn btn-sm btn-cinema-outline"><i class="bi bi-arrow-left"></i> Change Show</a>
+        </div>
+    </nav>
+
+    <main class="container my-4 flex-grow-1">
+        <!-- Show Details Header with Smart Seat Suggestion -->
+        <div class="card bg-dark border-secondary p-3 mb-4 rounded-3 shadow">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h4 class="fw-bold text-light mb-1" id="movieTitle">Loading Show...</h4>
+                    <div class="text-muted small" id="theatreDetails"></div>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <!-- UNIQUE FEATURE 3: Smart Seat Suggestion Button -->
+                    <button class="btn btn-warning text-dark fw-bold btn-sm shadow-sm" onclick="suggestBestSeats()">
+                        <i class="bi bi-magic"></i> Suggest Best Seats
+                    </button>
+                    <div class="text-end">
+                        <span class="badge bg-danger fs-6" id="showTimeBadge">--:--</span>
+                        <div class="text-secondary small mt-1" id="showDateText"></div>
+                    </div>
+                </div>
+        <!-- CINEMA PARTNER LIVE SYNC: Box Office Gateway Status Bar -->
+        <div class="card bg-black border border-secondary p-3 mb-4 rounded-3 shadow-sm live-pulse-badge">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="spinner-grow spinner-grow-sm text-success" role="status" style="width: 10px; height: 10px;"></span>
+                    <span class="badge bg-success bg-opacity-25 text-success border border-success fw-normal px-2 py-1">
+                        <i class="bi bi-broadcast"></i> <span id="partnerName">Connecting to Multiplex Box Office...</span>
+                    </span>
+                    <span class="badge bg-secondary bg-opacity-50 text-light small"><i class="bi bi-activity"></i> <span id="partnerLatency">14ms ping</span></span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-warning text-dark fw-bold px-2 py-1 shadow-sm" id="dynamicPriceBadge">
+                        <i class="bi bi-lightning-charge-fill"></i> <span id="dynamicPriceTag">Tariff</span>: ₹<span id="dynamicPriceVal">--</span>
+                    </span>
+                    <button class="btn btn-sm btn-outline-info" onclick="refreshLiveStatus(true)" id="btnLiveSync" title="Sync live seats with Multiplex Box Office">
+                        <i class="bi bi-arrow-repeat" id="syncIcon"></i> Live Sync
+                    </button>
+                    <!-- Simulation Demo Button for College Viva -->
+                    <button class="btn btn-sm btn-outline-warning" onclick="simulateCounterBooking()" id="btnSimulateSale" title="Simulate offline box-office counter booking">
+                        <i class="bi bi-ticket-perforated"></i> Simulate Counter Sale
+                    </button>
+                </div>
+            </div>
+            <!-- Occupancy bar -->
+            <div class="mt-2 pt-2 border-top border-secondary border-opacity-50">
+                <div class="d-flex justify-content-between align-items-center small mb-1">
+                    <span class="text-muted"><i class="bi bi-people-fill"></i> Box Office Real-Time Occupancy: <span class="text-light fw-bold" id="occupancyRatio">0/0 Seats</span></span>
+                    <span class="badge bg-dark border border-secondary text-warning fw-bold" id="occupancyStatusBadge">Available</span>
+                </div>
+                <div class="progress" style="height: 6px; background-color: #222;">
+                    <div class="progress-bar bg-success" id="occupancyProgressBar" role="progressbar" style="width: 0%"></div>
+                </div>
+                <div class="text-secondary small mt-1" style="font-size: 0.75rem;" id="priceReasonText">
+                    <i class="bi bi-info-circle"></i> Dynamic Box Office Pricing: Synchronized with cinema partner.
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Sync Toast Notification Container -->
+        <div class="position-fixed top-0 end-0 p-3" style="z-index: 11000">
+            <div id="liveSyncToast" class="toast align-items-center text-white bg-dark border-secondary shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body d-flex align-items-center gap-2" id="toastMessage">
+                        <i class="bi bi-info-circle-fill text-warning"></i> <span>Live sync notification</span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seat Legend -->
+        <div class="d-flex justify-content-center align-items-center flex-wrap gap-4 mb-4 py-2 border-top border-bottom border-secondary small">
+            <div class="d-flex align-items-center gap-2">
+                <span class="seat available" style="cursor: default;"></span>
+                <span>Available</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="seat selected" style="cursor: default;"></span>
+                <span class="text-success fw-bold">Selected</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="seat booked" style="cursor: not-allowed;"></span>
+                <span class="text-muted">Already Booked</span>
+            </div>
+            <div class="d-flex align-items-center gap-2 border-start border-secondary ps-3">
+                <span class="badge bg-warning text-dark fw-bold">Recliner</span>
+                <span class="badge bg-info text-dark fw-bold">Premium</span>
+                <span class="badge bg-secondary">Regular</span>
+            </div>
+        </div>
+
+        <!-- Visual Screen Indicator -->
+        <div class="text-center mb-4">
+            <div class="screen-indicator"></div>
+            <div class="small text-muted text-uppercase tracking-wider">All Eyes This Way Please (Cinema Screen)</div>
+        </div>
+
+        <!-- Interactive Seat Grid Container -->
+        <div class="text-center py-3 overflow-auto" id="seatGridContainer">
+            <div class="spinner-border text-danger" role="status"></div>
+            <p class="text-muted small mt-2">Loading interactive seat layout...</p>
+        </div>
+    </main>
+
+    <!-- Bottom Sticky Summary Bar -->
+    <div class="sticky-bottom bg-black border-top border-secondary py-3 shadow-lg" id="bottomBar">
+        <div class="container d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <div class="small text-muted">Selected Seats (<span id="seatCount">0</span>):</div>
+                <div class="fw-bold text-light fs-5" id="selectedSeatCodes">None</div>
+            </div>
+            <div class="text-end d-flex align-items-center gap-3">
+                <div>
+                    <div class="small text-muted">Estimated Total:</div>
+                    <div class="fw-bold text-success fs-4" id="totalPriceDisplay">₹0</div>
+                </div>
+                <button class="btn btn-cinema btn-lg px-4" id="btnProceed" disabled onclick="proceedToSummary()">
+                    Proceed <i class="bi bi-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        let currentShow = null;
+        let liveGatewayData = null;
+        let allSeatsList = [];
+        let selectedSeatsMap = new Map();
+        let timerSeconds = 600;
+        let showId = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            startHoldTimer();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            showId = urlParams.get('showId');
+
+            if (!showId) {
+                window.location.href = 'movies.html';
+                return;
+            }
+
+            try {
+                currentShow = await apiCall(`/shows/${showId}`);
+                liveGatewayData = await apiCall(`/shows/${showId}/live-status`);
+                allSeatsList = liveGatewayData.seats || [];
+
+                renderShowHeader(currentShow);
+                renderLiveGatewayBar(liveGatewayData);
+                renderSeatGrid(allSeatsList);
+
+                // Live Background Polling with Multiplex Box Office (Every 15 seconds)
+                setInterval(() => refreshLiveStatus(false), 15000);
+            } catch (err) {
+                document.getElementById('seatGridContainer').innerHTML = `<div class="alert alert-danger">${err.message}</div>`;
+            }
+        });
+
+        function startHoldTimer() {
+            const timerEl = document.getElementById('holdTimer');
+            const interval = setInterval(() => {
+                timerSeconds--;
+                if (timerSeconds <= 0) {
+                    clearInterval(interval);
+                    alert("Hold expired. Please choose your show again.");
+                    window.location.href = 'movies.html';
+                    return;
+                }
+                const m = Math.floor(timerSeconds / 60).toString().padStart(2, '0');
+                const s = (timerSeconds % 60).toString().padStart(2, '0');
+                timerEl.innerText = `${m}:${s}`;
+            }, 1000);
+        }
+
+        function renderShowHeader(show) {
+            document.getElementById('movieTitle').innerText = show.movieTitle;
+            document.getElementById('theatreDetails').innerText = `${show.theatreName} • ${show.screenName} (${show.theatreCity})`;
+            document.getElementById('showTimeBadge').innerText = show.startTime.substring(0, 5);
+            
+            const dateStr = new Date(show.showDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+            document.getElementById('showDateText').innerText = dateStr;
+        }
+
+        function renderLiveGatewayBar(data) {
+            if (!data) return;
+            document.getElementById('partnerName').innerText = data.partnerName || 'PVR-INOX Vista Cinema POS Gateway';
+            document.getElementById('partnerLatency').innerText = `${data.latencyMs || 14}ms ping`;
+            document.getElementById('dynamicPriceTag').innerText = data.priceTag || 'Standard';
+            document.getElementById('dynamicPriceVal').innerText = data.dynamicBasePrice || data.basePrice;
+            document.getElementById('occupancyRatio').innerText = `${data.bookedSeats}/${data.totalSeats} Seats Booked (${data.occupancyPercentage}%)`;
+            
+            const statusBadge = document.getElementById('occupancyStatusBadge');
+            statusBadge.innerText = data.occupancyStatus || 'Available';
+            if (data.occupancyPercentage >= 75) {
+                statusBadge.className = 'badge bg-danger text-light fw-bold';
+            } else if (data.occupancyPercentage >= 40) {
+                statusBadge.className = 'badge bg-warning text-dark fw-bold';
+            } else {
+                statusBadge.className = 'badge bg-success bg-opacity-25 text-success border border-success fw-bold';
+            }
+
+            const prog = document.getElementById('occupancyProgressBar');
+            prog.style.width = `${data.occupancyPercentage}%`;
+            if (data.occupancyPercentage >= 75) {
+                prog.className = 'progress-bar bg-danger';
+            } else if (data.occupancyPercentage >= 40) {
+                prog.className = 'progress-bar bg-warning';
+            } else {
+                prog.className = 'progress-bar bg-success';
+            }
+
+            document.getElementById('priceReasonText').innerHTML = `<i class="bi bi-info-circle"></i> <strong>Dynamic Tariff:</strong> ${data.priceReason || 'Standard box office pricing'}`;
+        }
+
+        async function refreshLiveStatus(isManual = false) {
+            const syncIcon = document.getElementById('syncIcon');
+            if (syncIcon) syncIcon.classList.add('spin-animation');
+
+            try {
+                const liveData = await apiCall(`/shows/${showId}/live-status`);
+                renderLiveGatewayBar(liveData);
+
+                // Track if any selected or visible seats were just booked
+                const newlyBooked = [];
+                liveData.seats.forEach(updatedSeat => {
+                    const existing = allSeatsList.find(s => s.seatId === updatedSeat.seatId);
+                    if (existing && !existing.isBooked && updatedSeat.isBooked) {
+                        newlyBooked.push(updatedSeat.seatCode);
+                        if (selectedSeatsMap.has(updatedSeat.seatId)) {
+                            selectedSeatsMap.delete(updatedSeat.seatId);
+                        }
+                    }
+                });
+
+                allSeatsList = liveData.seats;
+                renderSeatGrid(allSeatsList);
+
+                // Re-apply user's selected seats on fresh grid
+                selectedSeatsMap.forEach((val, id) => {
+                    const el = document.getElementById(`seat-${id}`);
+                    if (el && !el.classList.contains('booked')) {
+                        el.classList.remove('available');
+                        el.classList.add('selected');
+                    }
+                });
+                updateSummaryBar();
+
+                if (newlyBooked.length > 0) {
+                    showLiveToast(`⚡ Box Office Alert: Seat(s) ${newlyBooked.join(', ')} were just sold at the counter!`, 'warning');
+                } else if (isManual) {
+                    showLiveToast(`🟢 Live Synchronized with ${liveData.theatreName} (${liveData.latencyMs}ms)`, 'success');
+                }
+            } catch (err) {
+                console.warn('Live sync warning:', err);
+            } finally {
+                if (syncIcon) {
+                    setTimeout(() => syncIcon.classList.remove('spin-animation'), 600);
+                }
+            }
+        }
+
+        async function simulateCounterBooking() {
+            const btn = document.getElementById('btnSimulateSale');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Simulating...';
+
+            try {
+                const res = await apiCall(`/shows/${showId}/simulate-occupancy`, 'POST');
+                showLiveToast(`🎫 Live Simulation: Box Office Counter ticket booked successfully!`, 'success');
+                if (res.liveStatus) {
+                    renderLiveGatewayBar(res.liveStatus);
+                    allSeatsList = res.liveStatus.seats;
+                    renderSeatGrid(allSeatsList);
+
+                    selectedSeatsMap.forEach((val, id) => {
+                        const el = document.getElementById(`seat-${id}`);
+                        if (el && !el.classList.contains('booked')) {
+                            el.classList.remove('available');
+                            el.classList.add('selected');
+                        } else if (el && el.classList.contains('booked')) {
+                            selectedSeatsMap.delete(id);
+                        }
+                    });
+                    updateSummaryBar();
+                }
+            } catch (err) {
+                showLiveToast(err.message || 'Counter simulation failed.', 'danger');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-ticket-perforated"></i> Simulate Counter Sale';
+            }
+        }
+
+        function showLiveToast(message, type = 'info') {
+            const toastEl = document.getElementById('liveSyncToast');
+            const msgEl = document.getElementById('toastMessage');
+            if (!toastEl || !msgEl) return;
+
+            const iconClass = type === 'success' ? 'bi-check-circle-fill text-success' : 
+                             (type === 'warning' ? 'bi-exclamation-triangle-fill text-warning' : 'bi-info-circle-fill text-info');
+            msgEl.innerHTML = `<i class="bi ${iconClass}"></i> <span>${message}</span>`;
+            
+            const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+            toast.show();
+        }
+
+        function renderSeatGrid(seats) {
+            const container = document.getElementById('seatGridContainer');
+            if (!seats || seats.length === 0) {
+                container.innerHTML = '<p class="text-muted">No seats configured for this screen.</p>';
+                return;
+            }
+
+            const rowsMap = {};
+            seats.forEach(s => {
+                if (!rowsMap[s.row]) rowsMap[s.row] = [];
+                rowsMap[s.row].push(s);
+            });
+
+            let html = '<div class="d-inline-block text-center">';
+            Object.keys(rowsMap).forEach(row => {
+                const rowSeats = rowsMap[row];
+                const rowType = rowSeats[0]?.seatType || 'Regular';
+                const typeBadgeClass = (rowType === 'Platinum' || rowType === 'Recliner') ? 'bg-warning text-dark' : ((rowType === 'Gold' || rowType === 'Premium') ? 'bg-info text-dark' : 'bg-dark border border-secondary text-secondary');
+
+                html += `
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <div class="text-muted small fw-bold me-3" style="width: 20px;">${row}</div>
+                        <div class="d-flex flex-wrap gap-1">
+                            ${rowSeats.map(s => {
+                                const sId = (s.seatId !== undefined && s.seatId !== null) ? s.seatId : s.id;
+                                const sCode = s.seatCode || (s.row + (s.seatNumber || ''));
+                                const sNum = typeof s.seatNumber === 'string' && s.seatNumber.startsWith(s.row) ? s.seatNumber.replace(s.row, '') : (s.seatNumber || sCode);
+                                const baseP = (currentShow && currentShow.basePrice) ? currentShow.basePrice : 200;
+                                const sPrice = Number(s.price) || Math.round(baseP * (s.priceMultiplier || 1.0));
+
+                                if (s.isBooked) {
+                                    return `<div class="seat booked" title="Seat ${sCode} (Already Booked)">${sNum}</div>`;
+                                } else {
+                                    return `
+                                        <div class="seat available" 
+                                             id="seat-${sId}"
+                                             data-id="${sId}" 
+                                             data-code="${sCode}" 
+                                             data-price="${sPrice}" 
+                                             data-type="${s.seatType}"
+                                             title="Seat ${sCode} (${s.seatType}) - ₹${sPrice}"
+                                             onclick="toggleSeatSelection(${sId}, '${sCode}', ${sPrice}, '${s.seatType}')">
+                                            ${sNum}
+                                        </div>
+                                    `;
+                                }
+                            }).join('')}
+                        </div>
+                        <div class="ms-3" style="width: 80px; text-align: left;">
+                            <span class="badge ${typeBadgeClass} small">${rowType}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            container.innerHTML = html;
+        }
+
+        // UNIQUE FEATURE 3: Smart Seat Suggestion Algorithm
+        function suggestBestSeats() {
+            const input = prompt("How many tickets would you like? (1 to 6)", "2");
+            if (!input) return;
+            const count = parseInt(input);
+            if (isNaN(count) || count < 1 || count > 6) {
+                alert("Please enter a valid count between 1 and 6.");
+                return;
+            }
+
+            // Clear previous selection
+            selectedSeatsMap.forEach((val, id) => {
+                const el = document.getElementById(`seat-${id}`);
+                if (el) {
+                    el.classList.remove('selected');
+                    el.classList.add('available');
+                }
+            });
+            selectedSeatsMap.clear();
+
+            // Priority order of rows for optimal viewing: B (Premium middle), C (Middle), A (Recliner front/VIP), D (Back)
+            const preferredRows = ['B', 'C', 'A', 'D'];
+            let foundContiguous = [];
+
+            for (const row of preferredRows) {
+                const rowSeats = allSeatsList.filter(s => s.row === row && !s.isBooked);
+                if (rowSeats.length >= count) {
+                    // Check for contiguous sequential seats
+                    for (let i = 0; i <= rowSeats.length - count; i++) {
+                        let isSequential = true;
+                        for (let j = 0; j < count - 1; j++) {
+                            if (rowSeats[i + j + 1].seatNumber !== rowSeats[i + j].seatNumber + 1) {
+                                isSequential = false;
+                                break;
+                            }
+                        }
+                        if (isSequential) {
+                            foundContiguous = rowSeats.slice(i, i + count);
+                            break;
+                        }
+                    }
+                }
+                if (foundContiguous.length > 0) break;
+            }
+
+            // If contiguous not found in one row, fallback to best available seats
+            if (foundContiguous.length === 0) {
+                foundContiguous = allSeatsList.filter(s => !s.isBooked).slice(0, count);
+            }
+
+            if (foundContiguous.length < count) {
+                alert(`Sorry, only ${foundContiguous.length} seats are available for this show.`);
+                return;
+            }
+
+            // Select recommended seats
+            foundContiguous.forEach(s => {
+                selectedSeatsMap.set(s.seatId, { code: s.seatCode, price: s.price, type: s.seatType });
+                const el = document.getElementById(`seat-${s.seatId}`);
+                if (el) {
+                    el.classList.remove('available');
+                    el.classList.add('selected');
+                }
+            });
+
+            updateSummaryBar();
+            alert(`✨ Smart Suggestion: Selected ${foundContiguous.map(s => s.seatCode).join(', ')} in the central optimal viewing zone! You can confirm or tap to change.`);
+        }
+
+        function toggleSeatSelection(seatId, code, price, type) {
+            const seatEl = document.getElementById(`seat-${seatId}`);
+            if (selectedSeatsMap.has(seatId)) {
+                selectedSeatsMap.delete(seatId);
+                seatEl.classList.remove('selected');
+                seatEl.classList.add('available');
+            } else {
+                if (selectedSeatsMap.size >= 10) {
+                    alert("Maximum 10 seats per booking.");
+                    return;
+                }
+                selectedSeatsMap.set(seatId, { code, price, type });
+                seatEl.classList.add('selected');
+                seatEl.classList.remove('available');
+            }
+            updateSummaryBar();
+        }
+
+        function updateSummaryBar() {
+            const count = selectedSeatsMap.size;
+            document.getElementById('seatCount').innerText = count;
+
+            if (count === 0) {
+                document.getElementById('selectedSeatCodes').innerText = 'None';
+                document.getElementById('totalPriceDisplay').innerText = '₹0';
+                document.getElementById('btnProceed').disabled = true;
+                return;
+            }
+
+            const codes = Array.from(selectedSeatsMap.values()).map(s => s.code).join(', ');
+            let subtotal = 0;
+            selectedSeatsMap.forEach(s => subtotal += s.price);
+
+            document.getElementById('selectedSeatCodes').innerText = codes;
+            document.getElementById('totalPriceDisplay').innerText = `₹${subtotal.toFixed(0)}`;
+            document.getElementById('btnProceed').disabled = false;
+        }
+
+        function proceedToSummary() {
+            if (selectedSeatsMap.size === 0) return;
+
+            if (!Auth.isLoggedIn()) {
+                alert("Please login to proceed with your booking.");
+                window.location.href = `login.html?redirect=seat-selection.html?showId=${currentShow.id}`;
+                return;
+            }
+
+            const seatIds = Array.from(selectedSeatsMap.keys());
+            const seatCodes = Array.from(selectedSeatsMap.values()).map(s => s.code);
+            let subtotal = 0;
+            selectedSeatsMap.forEach(s => subtotal += s.price);
+
+            if (liveGatewayData && liveGatewayData.dynamicBasePrice) {
+                currentShow.basePrice = liveGatewayData.dynamicBasePrice;
+                currentShow.priceTag = liveGatewayData.priceTag;
+            }
+
+            const bookingData = {
+                show: currentShow,
+                seatIds: seatIds,
+                seatCodes: seatCodes,
+                subTotal: subtotal
+            };
+
+            sessionStorage.setItem('pendingBooking', JSON.stringify(bookingData));
+            window.location.href = 'booking-summary.html';
+        }
+    </script>
+</body>
+</html>
+
