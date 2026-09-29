@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Shows - MovieMate Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-custom sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand text-warning" href="dashboard.html"><i class="bi bi-shield-check"></i> MovieMate Admin</a>
+            <a href="../index.html" class="btn btn-sm btn-cinema-outline"><i class="bi bi-house"></i> View Website</a>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4 my-4">
+        <ul class="nav nav-pills mb-4 bg-black p-2 rounded-3 border border-secondary">
+            <li class="nav-item"><a class="nav-link text-light" href="dashboard.html"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+            <li class="nav-item"><a class="nav-link text-light" href="movies.html"><i class="bi bi-film"></i> Manage Movies</a></li>
+            <li class="nav-item"><a class="nav-link active text-light" href="shows.html"><i class="bi bi-clock-history"></i> Schedule Shows</a></li>
+            <li class="nav-item"><a class="nav-link text-light" href="bookings.html"><i class="bi bi-receipt"></i> All Bookings</a></li>
+        </ul>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold text-light mb-0"><i class="bi bi-calendar3 text-danger"></i> Showtimes Scheduling</h3>
+            <button class="btn btn-cinema" data-bs-toggle="modal" data-bs-target="#addShowModal"><i class="bi bi-plus-lg"></i> Schedule New Show</button>
+        </div>
+
+        <div class="card bg-dark border-secondary rounded-4 shadow p-4">
+            <div class="table-responsive">
+                <table class="table table-dark table-hover align-middle mb-0">
+                    <thead>
+                        <tr class="text-muted small">
+                            <th>Movie</th>
+                            <th>Theatre &amp; Screen</th>
+                            <th>Date</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Base Price</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="showsTableBody">
+                        <tr><td colspan="7" class="text-center py-4">Loading showtimes...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Show Modal -->
+    <div class="modal fade" id="addShowModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary text-light">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-calendar-plus text-danger"></i> Schedule a Show</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addShowForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Select Movie</label>
+                            <select class="form-select bg-black text-light border-secondary" id="sMovieSelect" required></select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Select Screen</label>
+                            <select class="form-select bg-black text-light border-secondary" id="sScreenSelect" required></select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Show Date</label>
+                            <input type="date" class="form-control bg-black text-light border-secondary" id="sDate" required>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Start Time</label>
+                                <input type="time" class="form-control bg-black text-light border-secondary" id="sStart" required value="18:30">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">End Time</label>
+                                <input type="time" class="form-control bg-black text-light border-secondary" id="sEnd" required value="21:15">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Base Ticket Price (₹)</label>
+                            <input type="number" class="form-control bg-black text-light border-secondary" id="sPrice" required value="250">
+                        </div>
+                    </div>
+                    <div class="modal-footer border-secondary">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-cinema">Create Showtime</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const ok = await Auth.ensureAdmin();
+            if (!ok) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            document.getElementById('sDate').valueAsDate = new Date();
+
+            await loadShows();
+            await populateModalDropdowns();
+
+            document.getElementById('addShowForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const payload = {
+                    movieId: parseInt(document.getElementById('sMovieSelect').value),
+                    screenId: parseInt(document.getElementById('sScreenSelect').value),
+                    showDate: document.getElementById('sDate').value,
+                    startTime: document.getElementById('sStart').value + ':00',
+                    endTime: document.getElementById('sEnd').value + ':00',
+                    basePrice: parseFloat(document.getElementById('sPrice').value)
+                };
+
+                try {
+                    await apiCall('/shows', 'POST', payload, true);
+                    alert("Show scheduled successfully!");
+                    bootstrap.Modal.getInstance(document.getElementById('addShowModal')).hide();
+                    await loadShows();
+                } catch (err) {
+                    alert(err.message || "Failed to schedule show.");
+                }
+            });
+        });
+
+        async function loadShows() {
+            const tbody = document.getElementById('showsTableBody');
+            try {
+                const shows = await apiCall('/shows');
+                tbody.innerHTML = shows.map(s => {
+                    const dateStr = new Date(s.showDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    return `
+                        <tr>
+                            <td class="fw-bold text-light">${s.movieTitle}</td>
+                            <td>${s.theatreName} <span class="badge bg-secondary ms-1">${s.screenName}</span></td>
+                            <td>${dateStr}</td>
+                            <td class="text-warning fw-bold">${s.startTime.substring(0, 5)}</td>
+                            <td>${s.endTime.substring(0, 5)}</td>
+                            <td class="text-success fw-bold">₹${s.basePrice.toFixed(2)}</td>
+                            <td>
+                                <button class="btn btn-outline-danger btn-sm" onclick="deleteShow(${s.id})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-danger">${err.message}</td></tr>`;
+            }
+        }
+
+        async function populateModalDropdowns() {
+            try {
+                const movies = await apiCall('/movies');
+                const mSelect = document.getElementById('sMovieSelect');
+                movies.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m.id;
+                    opt.innerText = `${m.title} (${m.language})`;
+                    mSelect.appendChild(opt);
+                });
+
+                const theatres = await apiCall('/theatres');
+                const sSelect = document.getElementById('sScreenSelect');
+                theatres.forEach(t => {
+                    t.screens.forEach(sc => {
+                        const opt = document.createElement('option');
+                        opt.value = sc.id;
+                        opt.innerText = `${t.name} - ${sc.screenName} (${sc.totalSeats} seats)`;
+                        sSelect.appendChild(opt);
+                    });
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function deleteShow(id) {
+            if (!confirm("Delete this showtime?")) return;
+            try {
+                await apiCall(`/shows/${id}`, 'DELETE', null, true);
+                alert("Showtime deleted!");
+                await loadShows();
+            } catch (err) {
+                alert(err.message || "Failed to delete show.");
+            }
+        }
+    </script>
+</body>
+</html>
+
