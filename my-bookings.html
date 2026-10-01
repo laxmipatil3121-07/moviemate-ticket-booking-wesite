@@ -425,45 +425,162 @@ const MockService = {
         };
     },
 
-    handle(endpoint, method = 'GET', body = null) {
-        // 5. Coupon Validation
+        handle(endpoint, method = 'GET', body = null) {
+        const clean = endpoint.split('?')[0];
+
+        // 0. Coupon Validation
         if (clean === '/coupons/validate' && method === 'POST') {
-            const cCode = ((body && body.code) ? body.code : '').toUpperCase().trim();
-            const sTotal = Number(body ? body.subTotal : 0) || 0;
-            if (cCode === 'FIRSTBOOK') {
-                return { valid: true, code: 'FIRSTBOOK', discountAmount: Math.round(sTotal * 0.20), message: 'FIRSTBOOK applied: 20% OFF!' };
+            const code = ((body && body.code) ? body.code : (body && body.couponCode) ? body.couponCode : '').toUpperCase().trim();
+            const sub = Number(body ? body.subTotal : 0) || 0;
+            if (code === 'FIRSTBOOK') {
+                return { valid: true, code: 'FIRSTBOOK', discountAmount: Math.round(sub * 0.20), message: 'FIRSTBOOK applied: 20% OFF!' };
             }
-            if (cCode === 'MOVIE50') {
-                return { valid: true, code: 'MOVIE50', discountAmount: Math.min(50, sTotal), message: 'MOVIE50 applied: Flat ₹50 OFF!' };
+            if (code === 'MOVIE50') {
+                return { valid: true, code: 'MOVIE50', discountAmount: Math.min(50, sub), message: 'MOVIE50 applied: Flat ₹50 OFF!' };
             }
-            if (cCode === 'WEEKEND') {
-                return { valid: true, code: 'WEEKEND', discountAmount: Math.round(sTotal * 0.15), message: 'WEEKEND applied: 15% OFF!' };
+            if (code === 'WEEKEND') {
+                return { valid: true, code: 'WEEKEND', discountAmount: Math.round(sub * 0.15), message: 'WEEKEND applied: 15% OFF!' };
             }
             return { valid: false, message: 'Invalid coupon code.' };
         }
-        const clean = endpoint.split('?')[0];
 
-        // 1. Movies endpoints
+        // 1. Genres
+        if (clean === '/genres') {
+            return [
+                { id: 1, name: "Action" },
+                { id: 2, name: "Sci-Fi" },
+                { id: 3, name: "Drama" },
+                { id: 4, name: "Comedy" },
+                { id: 5, name: "Thriller" },
+                { id: 6, name: "Adventure" },
+                { id: 7, name: "Horror" },
+                { id: 9, name: "Romance" }
+            ];
+        }
+
+        // 2. AI Recommendations (Top rated Now Showing)
+        if (clean === '/movies/recommended') {
+            return MockService.movies
+                .filter(m => m.status === 'Now Showing')
+                .sort((a, b) => b.rating - a.rating)
+                .slice(0, 4);
+        }
+
+        // 3. Mood Discovery
+        if (clean === '/movies/mood') {
+            const queryStr = endpoint.includes('?') ? endpoint.split('?')[1] : '';
+            const urlParams = new URLSearchParams(queryStr);
+            const mood = (urlParams.get('mood') || '').toLowerCase();
+            return MockService.movies.filter(m => {
+                const genres = (m.genres || []).map(g => g.name.toLowerCase());
+                if (mood.includes('action')) return genres.includes('action');
+                if (mood.includes('comedy')) return genres.includes('comedy');
+                if (mood.includes('horror') || mood.includes('thrill')) return genres.includes('horror') || genres.includes('thriller');
+                if (mood.includes('sci-fi') || mood.includes('future')) return genres.includes('sci-fi');
+                if (mood.includes('drama') || mood.includes('emotion')) return genres.includes('drama');
+                if (mood.includes('romance')) return genres.includes('romance');
+                return true;
+            });
+        }
+
+        // 4. Typeahead Search
+        if (clean === '/movies/suggestions') {
+            const queryStr = endpoint.includes('?') ? endpoint.split('?')[1] : '';
+            const urlParams = new URLSearchParams(queryStr);
+            const q = (urlParams.get('q') || '').toLowerCase();
+            if (!q) return [];
+            return MockService.movies
+                .filter(m => m.title.toLowerCase().includes(q))
+                .slice(0, 5)
+                .map(m => ({
+                    id: m.id,
+                    title: m.title,
+                    subtitle: `${m.language} • ${m.status}`,
+                    type: 'Movie',
+                    url: `movie-details.html?id=${m.id}`
+                }));
+        }
+
+        // 5. Watchlist
+        if (clean === '/watchlist' || clean.startsWith('/watchlist/')) {
+            let stored = [];
+            try { stored = JSON.parse(localStorage.getItem('moviemate_watchlist') || '[]'); } catch(e) {}
+            if (clean.startsWith('/watchlist/check/')) {
+                const checkId = parseInt(clean.replace('/watchlist/check/', ''));
+                return stored.includes(checkId);
+            }
+            if (method === 'POST') {
+                const addId = parseInt(clean.replace('/watchlist/', ''));
+                if (!isNaN(addId)) {
+                    const idx = stored.indexOf(addId);
+                    let inWatchlist = false;
+                    if (idx === -1) {
+                        stored.push(addId);
+                        inWatchlist = true;
+                    } else {
+                        stored.splice(idx, 1);
+                        inWatchlist = false;
+                    }
+                    localStorage.setItem('moviemate_watchlist', JSON.stringify(stored));
+                    return { inWatchlist: inWatchlist, message: inWatchlist ? 'Added to watchlist' : 'Removed from watchlist' };
+                }
+                return { inWatchlist: false };
+            }
+            if (method === 'DELETE') {
+                const delId = parseInt(clean.replace('/watchlist/', ''));
+                stored = stored.filter(id => id !== delId);
+                localStorage.setItem('moviemate_watchlist', JSON.stringify(stored));
+                return { success: true };
+            }
+            return MockService.movies.filter(m => stored.includes(m.id));
+        }
+
+        // 6. Reviews
+        if (clean.includes('/reviews')) {
+            if (method === 'POST') {
+                return { success: true, message: 'Review submitted successfully!' };
+            }
+            return [
+                { id: 1, userName: "Aarav Sharma", rating: 5, reviewText: "Mindblowing cinematic visual experience! Worth every penny.", createdAt: new Date().toISOString() },
+                { id: 2, userName: "Sneha Patil", rating: 4, reviewText: "Superb storytelling and brilliant background score. Must watch with family!", createdAt: new Date().toISOString() }
+            ];
+        }
+
+        // 7. Movies catalog endpoints
         if (clean === '/movies' || clean === '/movies/featured') {
-            return MockService.movies;
+            const queryStr = endpoint.includes('?') ? endpoint.split('?')[1] : '';
+            if (!queryStr) return MockService.movies;
+            const params = new URLSearchParams(queryStr);
+            const search = (params.get('search') || '').toLowerCase();
+            const genreId = params.get('genreId');
+            const status = (params.get('status') || '').toLowerCase();
+
+            return MockService.movies.filter(m => {
+                if (search && !m.title.toLowerCase().includes(search) && !(m.cast && m.cast.toLowerCase().includes(search))) return false;
+                if (genreId && !(m.genres && m.genres.some(g => String(g.id) === String(genreId)))) return false;
+                if (status && m.status.toLowerCase() !== status) return false;
+                return true;
+            });
         }
         if (clean.startsWith('/movies/')) {
             const id = parseInt(clean.replace('/movies/', ''));
-            const m = MockService.movies.find(x => x.id === id) || MockService.movies[0];
-            const shows = MockService.getShows(m.id);
-            return {
-                ...m,
-                shows: shows,
-                availableShows: shows
-            };
+            if (!isNaN(id)) {
+                const m = MockService.movies.find(x => x.id === id) || MockService.movies[0];
+                const shows = MockService.getShows(m.id);
+                return {
+                    ...m,
+                    shows: shows,
+                    availableShows: shows
+                };
+            }
         }
 
-        // 2. Theatres endpoints
+        // 8. Theatres endpoints
         if (clean === '/theatres') {
             return MockService.theatres;
         }
 
-        // 3. Shows endpoints
+        // 9. Shows endpoints & Live Seat Layout
         if (clean.includes('/live-status')) {
             const parts = clean.split('/');
             const showId = parseInt(parts[2]) || 1;
@@ -494,26 +611,29 @@ const MockService = {
         }
         if (clean.startsWith('/shows/')) {
             const showId = parseInt(clean.replace('/shows/', ''));
-            const allShows = MockService.getShows();
-            return allShows.find(s => s.id === showId || s.showId === showId) || allShows[0];
+            if (!isNaN(showId)) {
+                const allShows = MockService.getShows();
+                return allShows.find(s => s.id === showId || s.showId === showId) || allShows[0];
+            }
         }
         if (clean === '/shows') {
             return MockService.getShows();
         }
 
-        // 4. Auth
-        if (clean === '/auth/login') {
-            const role = (body && body.email && body.email.includes('admin')) ? 'Admin' : 'User';
-            const name = role === 'Admin' ? 'System Administrator' : 'Rahul Sharma';
+        // 10. Auth
+        if (clean === '/auth/login' || clean === '/auth/register') {
+            const email = body?.email || 'user@movieticket.com';
+            const role = email.includes('admin') ? 'Admin' : 'User';
+            const name = body?.fullName || (role === 'Admin' ? 'System Administrator' : 'Rahul Sharma');
             return {
                 token: 'mock-jwt-token-preview',
-                email: body?.email || 'demo@movieticket.com',
+                email: email,
                 fullName: name,
                 role: role
             };
         }
 
-        // 5. Admin Dashboard & Bookings
+        // 11. Admin Dashboard & Bookings
         if (clean === '/admin/dashboard') {
             return {
                 totalRevenue: 52400.00,
@@ -529,26 +649,52 @@ const MockService = {
                     { title: "Stree 2: Sarkate Ka Aatank", bookingsCount: 68 },
                     { title: "Kalki 2898 AD", bookingsCount: 52 },
                     { title: "Pushpa 2: The Rule", bookingsCount: 41 }
+                ],
+                popularMovies: [
+                    { movieTitle: "Stree 2: Sarkate Ka Aatank", bookingsCount: 68, totalSales: 16320 },
+                    { movieTitle: "Kalki 2898 AD", bookingsCount: 52, totalSales: 12480 },
+                    { movieTitle: "Pushpa 2: The Rule", bookingsCount: 41, totalSales: 9840 }
                 ]
             };
         }
 
-        if (clean === '/admin/bookings' || clean === '/bookings/my') {
-            return [
-                { bookingNumber: "MM-984321", customerName: "Rahul Sharma", customerEmail: "user@movieticket.com", movieTitle: "Stree 2: Sarkate Ka Aatank", theatreName: "INOX - Khandesh Central Mall", screenName: "Laser 4K", showDate: new Date().toISOString(), startTime: "18:30:00", seats: ["A4", "A5"], totalAmount: 640.00, paymentMethod: "UPI", status: "Confirmed" }
-            ];
+        if (clean === '/admin/bookings' || clean.includes('/bookings/my')) {
+            let myBookings = [];
+            try {
+                const stored = JSON.parse(localStorage.getItem('moviemate_last_booking') || 'null');
+                if (stored) myBookings.push(stored);
+            } catch(e) {}
+            if (myBookings.length === 0) {
+                myBookings = [
+                    { bookingNumber: "MM-984321", customerName: "Rahul Sharma", customerEmail: "user@movieticket.com", movieTitle: "Stree 2: Sarkate Ka Aatank", theatreName: "INOX - Khandesh Central Mall", screenName: "Laser 4K", showDate: new Date().toISOString(), startTime: "18:30:00", seats: ["A4", "A5"], totalAmount: 640.00, paymentMethod: "UPI", status: "Confirmed" }
+                ];
+            }
+            return myBookings;
         }
 
-        // 6. Create Booking
+        // 12. Create Booking
         if (clean === '/bookings' && method === 'POST') {
             const bookingNum = "MM-" + Math.floor(100000 + Math.random() * 900000);
-            return {
-                id: 999,
+            const newBooking = {
+                id: Math.floor(Math.random() * 10000),
                 bookingNumber: bookingNum,
-                status: "Confirmed",
+                customerName: body?.customerName || localStorage.getItem('fullName') || 'Valued Customer',
+                customerEmail: body?.customerEmail || localStorage.getItem('email') || 'user@movieticket.com',
+                movieTitle: body?.movieTitle || 'Movie Experience',
+                theatreName: body?.theatreName || 'PVR-INOX Multiplex',
+                screenName: body?.screenName || 'Screen 1',
+                showDate: new Date().toISOString(),
+                startTime: '18:30:00',
+                seats: body?.seats || ['A1'],
                 totalAmount: body?.totalAmount || 500,
+                paymentMethod: body?.paymentMethod || 'UPI',
+                status: "Confirmed",
                 message: "Booking confirmed successfully!"
             };
+            try {
+                localStorage.setItem('moviemate_last_booking', JSON.stringify(newBooking));
+            } catch(e) {}
+            return newBooking;
         }
 
         // Default empty fallback

@@ -123,7 +123,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const ok = await Auth.ensureAdmin();
             if (!ok) {
-                window.location.href = '../login.html';
+                window.location.href = 'login.html';
                 return;
             }
             await loadAdminMovies();
@@ -162,7 +162,7 @@
                 const movies = await apiCall('/movies');
                 tbody.innerHTML = movies.map(m => `
                     <tr>
-                        <td><img src="${m.posterUrl ? (m.posterUrl.startsWith('http') ? m.posterUrl : '../' + m.posterUrl) : 'https://via.placeholder.com/300x400'}" class="rounded" style="width: 45px; height: 60px; object-fit: cover;"></td>
+                        <td><img src="${m.posterUrl ? (m.posterUrl.startsWith('http') ? m.posterUrl : 'm.posterUrl) : 'https://via.placeholder.com/300x400'}" class="rounded" style="width: 45px; height: 60px; object-fit: cover;"></td>
                         <td class="fw-bold text-light">${m.title}</td>
                         <td>${m.language}</td>
                         <td>${m.durationMinutes}m</td>

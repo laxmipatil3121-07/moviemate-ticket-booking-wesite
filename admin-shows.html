@@ -104,7 +104,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const ok = await Auth.ensureAdmin();
             if (!ok) {
-                window.location.href = '../login.html';
+                window.location.href = 'login.html';
                 return;
             }
 
