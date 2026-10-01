@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -81,7 +81,7 @@
                             <td>${b.theatreName} (${b.screenName})</td>
                             <td>${dateStr} @ ${b.startTime.substring(0, 5)}</td>
                             <td><span class="badge bg-secondary">${b.seats.join(', ')}</span></td>
-                            <td class="text-success fw-bold">â‚¹${b.totalAmount.toFixed(2)}</td>
+                            <td class="text-success fw-bold">₹${b.totalAmount.toFixed(2)}</td>
                             <td><span class="badge bg-dark border border-secondary">${b.paymentMethod}</span></td>
                             <td><span class="badge ${b.status === 'Confirmed' ? 'bg-success' : 'bg-danger'}">${b.status}</span></td>
                         </tr>

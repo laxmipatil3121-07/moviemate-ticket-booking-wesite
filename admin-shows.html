@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -84,7 +84,7 @@
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label small fw-bold">Base Ticket Price (â‚¹)</label>
+                            <label class="form-label small fw-bold">Base Ticket Price (₹)</label>
                             <input type="number" class="form-control bg-black text-light border-secondary" id="sPrice" required value="250">
                         </div>
                     </div>
@@ -148,7 +148,7 @@
                             <td>${dateStr}</td>
                             <td class="text-warning fw-bold">${s.startTime.substring(0, 5)}</td>
                             <td>${s.endTime.substring(0, 5)}</td>
-                            <td class="text-success fw-bold">â‚¹${s.basePrice.toFixed(2)}</td>
+                            <td class="text-success fw-bold">₹${s.basePrice.toFixed(2)}</td>
                             <td>
                                 <button class="btn btn-outline-danger btn-sm" onclick="deleteShow(${s.id})">
                                     <i class="bi bi-trash"></i>

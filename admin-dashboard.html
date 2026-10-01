@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -31,7 +31,7 @@
             <div class="col-sm-6 col-xl-3">
                 <div class="card bg-dark border-secondary p-3 rounded-3">
                     <div class="text-muted small">TOTAL REVENUE (SIMULATED)</div>
-                    <h3 class="fw-bold text-success mb-0" id="statRevenue">â‚¹0</h3>
+                    <h3 class="fw-bold text-success mb-0" id="statRevenue">₹0</h3>
                 </div>
             </div>
             <div class="col-sm-6 col-xl-3">
@@ -103,7 +103,7 @@
 
             try {
                 const stats = await apiCall('/admin/dashboard', 'GET', null, true);
-                document.getElementById('statRevenue').innerText = `â‚¹${stats.totalRevenue.toFixed(2)}`;
+                document.getElementById('statRevenue').innerText = `₹${stats.totalRevenue.toFixed(2)}`;
                 document.getElementById('statBookings').innerText = stats.totalBookings;
                 document.getElementById('statMovies').innerText = stats.totalMovies;
                 document.getElementById('statUsers').innerText = stats.totalUsers;
@@ -118,7 +118,7 @@
                             <td>${b.customerName}</td>
                             <td class="fw-bold text-light">${b.movieTitle}</td>
                             <td><span class="badge bg-secondary">${b.seats.join(', ')}</span></td>
-                            <td class="text-success fw-bold">â‚¹${b.totalAmount.toFixed(2)}</td>
+                            <td class="text-success fw-bold">₹${b.totalAmount.toFixed(2)}</td>
                             <td><span class="badge ${b.status === 'Confirmed' ? 'bg-success' : 'bg-danger'}">${b.status}</span></td>
                         </tr>
                     `).join('');
@@ -132,7 +132,7 @@
                                 <div class="fw-bold text-light">#${idx + 1} ${pm.movieTitle}</div>
                                 <div class="text-muted small">${pm.bookingsCount} booking(s)</div>
                             </div>
-                            <span class="text-success fw-bold">â‚¹${pm.totalSales.toFixed(2)}</span>
+                            <span class="text-success fw-bold">₹${pm.totalSales.toFixed(2)}</span>
                         </div>
                     `).join('');
                 }
