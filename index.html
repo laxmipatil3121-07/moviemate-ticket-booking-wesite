@@ -353,6 +353,21 @@ footer {
 
     <!-- Main Content -->
     <main class="container my-5">
+        <!-- Lucky Wheel Promotional Banner -->
+        <div class="card bg-dark border-danger mb-4 shadow-lg overflow-hidden" style="background: linear-gradient(135deg, rgba(229,9,20,0.18) 0%, rgba(124,58,237,0.18) 100%);">
+            <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <span style="font-size: 2.5rem;">ðŸŽ¡</span>
+                    <div>
+                        <h4 class="fw-bold text-light mb-1"><span class="badge bg-warning text-dark me-2">NEW</span>Daily Lucky Spin &amp; Win!</h4>
+                        <p class="text-secondary small mb-0">Spin the wheel to unlock instant promo codes: Flat ₹75 OFF, 20% Discount, or Free Popcorn Combos!</p>
+                    </div>
+                </div>
+                <button class="btn btn-cinema px-4 py-2 fw-bold" onclick="openSpinWheelModal()">
+                    <i class="bi bi-gift-fill me-1"></i> Spin Wheel Now
+                </button>
+            </div>
+        </div>
 
         <!-- UNIQUE FEATURE 2: MOOD-BASED MOVIE DISCOVERY -->
         <section id="moodSection" class="mb-5 p-4 rounded-4 bg-dark border border-secondary shadow">
@@ -583,6 +598,15 @@ const MockService = {
             }
             if (code === 'WEEKEND') {
                 return { valid: true, code: 'WEEKEND', discountAmount: Math.round(sub * 0.15), message: 'WEEKEND applied: 15% OFF!' };
+            }
+            if (code === 'VIP75') {
+                return { valid: true, code: 'VIP75', discountAmount: Math.min(75, sub), message: 'VIP75 applied: Flat ₹75 OFF!' };
+            }
+            if (code === 'FREECOMBO') {
+                return { valid: true, code: 'FREECOMBO', discountAmount: Math.min(60, sub), message: 'FREECOMBO applied: Flat ₹60 Snack Discount!' };
+            }
+            if (code === 'JACKPOT30') {
+                return { valid: true, code: 'JACKPOT30', discountAmount: Math.round(sub * 0.30), message: 'JACKPOT30 applied: Mega 30% Discount!' };
             }
             return { valid: false, message: 'Invalid coupon code.' };
         }
@@ -1124,6 +1148,45 @@ document.addEventListener('DOMContentLoaded', () => {
             `).join('');
         }
     </script>
+    <script src="cinebot.js"></script>
+    <button class="spin-floating-trigger" id="btnOpenSpinWheel" onclick="openSpinWheelModal()" title="Spin the Wheel to win discounts!">
+        <span class="fs-5">ðŸŽ¡</span> Spin &amp; Win!
+    </button>
+    <!-- Lucky Spin the Wheel Modal -->
+    <div class="modal fade" id="spinWheelModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark border-danger shadow-lg">
+                <div class="modal-header border-secondary">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-4">ðŸŽ¡</span>
+                        <div>
+                            <h5 class="modal-title fw-bold text-light mb-0">Lucky Cinema Spin Wheel</h5>
+                            <div class="text-muted small">Spin to unlock guaranteed discount promo codes!</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center p-4">
+                    <div class="spin-wheel-container mb-4">
+                        <div class="spin-wheel-pointer"></div>
+                        <canvas id="wheelCanvas" width="320" height="320" class="spin-wheel-canvas"></canvas>
+                        <button class="spin-wheel-center-btn" id="btnSpinNow" onclick="spinWheel()">SPIN<br>NOW</button>
+                    </div>
+                    <div id="spinResultBox" class="d-none">
+                        <div class="p-3 bg-black rounded-3 border border-success mb-2">
+                            <div class="text-success fw-bold fs-5 mb-1" id="spinPrizeTitle">ðŸŽ‰ You Won Flat ₹75 OFF!</div>
+                            <p class="text-muted small mb-2" id="spinPrizeDesc">Promo code unlocked</p>
+                            <div class="d-flex justify-content-center align-items-center gap-2">
+                                <span class="badge bg-danger fs-6 p-2 font-monospace" id="spinWonCoupon">VIP75</span>
+                                <button class="btn btn-sm btn-outline-light" id="btnApplyWonCoupon" onclick="applyWonCoupon()">Apply Code</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="spin-wheel.js"></script>
 </body>
 </html>
 

@@ -461,6 +461,15 @@ const MockService = {
             if (code === 'WEEKEND') {
                 return { valid: true, code: 'WEEKEND', discountAmount: Math.round(sub * 0.15), message: 'WEEKEND applied: 15% OFF!' };
             }
+            if (code === 'VIP75') {
+                return { valid: true, code: 'VIP75', discountAmount: Math.min(75, sub), message: 'VIP75 applied: Flat ₹75 OFF!' };
+            }
+            if (code === 'FREECOMBO') {
+                return { valid: true, code: 'FREECOMBO', discountAmount: Math.min(60, sub), message: 'FREECOMBO applied: Flat ₹60 Snack Discount!' };
+            }
+            if (code === 'JACKPOT30') {
+                return { valid: true, code: 'JACKPOT30', discountAmount: Math.round(sub * 0.30), message: 'JACKPOT30 applied: Mega 30% Discount!' };
+            }
             return { valid: false, message: 'Invalid coupon code.' };
         }
 
@@ -933,6 +942,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     </script>
+    <script src="cinebot.js"></script>
 </body>
 </html>
 

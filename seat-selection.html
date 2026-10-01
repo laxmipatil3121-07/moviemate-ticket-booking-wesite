@@ -354,6 +354,15 @@ footer {
         <div class="text-center mb-4">
             <div class="screen-indicator"></div>
             <div class="small text-muted text-uppercase tracking-wider">All Eyes This Way Please (Cinema Screen)</div>
+        <!-- 3D Seat POV Simulator Trigger Toolbar -->
+        <div class="d-flex justify-content-center gap-2 mb-4">
+            <button class="btn btn-outline-info btn-sm rounded-pill px-3 shadow" onclick="openSeatPOVModal()">
+                <i class="bi bi-eye-fill text-info"></i> <strong>Seat POV Simulator</strong> (3D Screen View)
+            </button>
+            <button class="btn btn-outline-warning btn-sm rounded-pill px-3 shadow" onclick="suggestBestSeats()">
+                <i class="bi bi-magic text-warning"></i> <strong>Smart Seat Suggestion</strong>
+            </button>
+        </div>
         </div>
 
         <!-- Interactive Seat Grid Container -->
@@ -367,7 +376,10 @@ footer {
     <div class="sticky-bottom bg-black border-top border-secondary py-3 shadow-lg" id="bottomBar">
         <div class="container d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-                <div class="small text-muted">Selected Seats (<span id="seatCount">0</span>):</div>
+                                <div class="d-flex align-items-center gap-2">
+                    <div class="small text-muted">Selected Seats (<span id="seatCount">0</span>):</div>
+                    <button class="btn btn-outline-info btn-sm py-0 px-2" style="font-size: 0.75rem;" onclick="openSeatPOVModal()"><i class="bi bi-eye"></i> View POV</button>
+                </div>
                 <div class="fw-bold text-light fs-5" id="selectedSeatCodes">None</div>
             </div>
             <div class="text-end d-flex align-items-center gap-3">
@@ -546,6 +558,15 @@ const MockService = {
             }
             if (code === 'WEEKEND') {
                 return { valid: true, code: 'WEEKEND', discountAmount: Math.round(sub * 0.15), message: 'WEEKEND applied: 15% OFF!' };
+            }
+            if (code === 'VIP75') {
+                return { valid: true, code: 'VIP75', discountAmount: Math.min(75, sub), message: 'VIP75 applied: Flat ₹75 OFF!' };
+            }
+            if (code === 'FREECOMBO') {
+                return { valid: true, code: 'FREECOMBO', discountAmount: Math.min(60, sub), message: 'FREECOMBO applied: Flat ₹60 Snack Discount!' };
+            }
+            if (code === 'JACKPOT30') {
+                return { valid: true, code: 'JACKPOT30', discountAmount: Math.round(sub * 0.30), message: 'JACKPOT30 applied: Mega 30% Discount!' };
             }
             return { valid: false, message: 'Invalid coupon code.' };
         }
@@ -1328,6 +1349,158 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = 'booking-summary.html';
         }
     </script>
+    <!-- Seat POV 3D Auditorium Simulator Modal -->
+    <div class="modal fade" id="seatPovModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content bg-dark border-secondary">
+                <div class="modal-header border-secondary">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-4">ðŸ‘ï¸</span>
+                        <div>
+                            <h5 class="modal-title fw-bold text-light mb-0">Seat POV 3D Simulator</h5>
+                            <div class="text-muted small" id="povSeatTitle">Simulating screen view from selected seat</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Tier row quick switcher -->
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                        <span class="text-muted small fw-bold">Select Perspective by Tier:</span>
+                        <div class="btn-group btn-group-sm" id="povRowSwitchers">
+                            <button class="btn btn-outline-secondary" onclick="updatePOVRow('A')">Row A (Front / Immersive)</button>
+                            <button class="btn btn-cinema" onclick="updatePOVRow('B')">Row B (Director's Cut)</button>
+                            <button class="btn btn-outline-secondary" onclick="updatePOVRow('C')">Row C (Center Sweetspot)</button>
+                            <button class="btn btn-outline-secondary" onclick="updatePOVRow('D')">Row D (Elevated Balcony)</button>
+                        </div>
+                    </div>
+
+                    <!-- Auditorium 3D visual container -->
+                    <div class="pov-auditorium-container text-center">
+                        <div class="pov-screen-wrapper">
+                            <div class="pov-projector-beam"></div>
+                            <div class="pov-screen" id="povScreenElement" style="background-image: url('hero_avengers.jpg');">
+                                <div class="d-flex h-100 flex-column justify-content-end p-3 text-start position-relative" style="z-index: 2;">
+                                    <span class="badge bg-danger mb-1 align-self-start" style="font-size: 0.7rem;">Dolby Cinema 4K Laser</span>
+                                    <h4 class="fw-bold text-light mb-0" id="povMovieName">Movie Title</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Foreground viewer silhouettes & indicators -->
+                        <div class="pov-seats-foreground" id="povChairsForeground">
+                            <div class="pov-chair-silhouette"></div>
+                            <div class="pov-chair-silhouette"></div>
+                            <div class="pov-chair-silhouette"></div>
+                            <div class="pov-chair-silhouette"></div>
+                            <div class="pov-chair-silhouette"></div>
+                            <div class="pov-chair-silhouette"></div>
+                            <div class="pov-chair-silhouette"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sightline & Audio Info Card -->
+                    <div class="row g-3 mt-3 text-start">
+                        <div class="col-md-4">
+                            <div class="p-3 bg-black rounded-3 border border-secondary h-100">
+                                <div class="text-muted small mb-1"><i class="bi bi-aspect-ratio text-info"></i> Screen Field of View (FOV)</div>
+                                <div class="fw-bold text-light" id="povFovText">52Â° Director's FOV</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 bg-black rounded-3 border border-secondary h-100">
+                                <div class="text-muted small mb-1"><i class="bi bi-speaker text-warning"></i> Dolby Atmos Soundstage</div>
+                                <div class="fw-bold text-light" id="povAudioText">100% Balanced Surround Sound</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 bg-black rounded-3 border border-secondary h-100">
+                                <div class="text-muted small mb-1"><i class="bi bi-arrows-vertical text-success"></i> Vertical Eye Angle</div>
+                                <div class="fw-bold text-light" id="povAngleText">0Â° Direct Eye Level</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-cinema px-4" data-bs-dismiss="modal">Confirm &amp; Pick This Seat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<script>
+        function openSeatPOVModal(rowChar) {
+            let targetRow = rowChar;
+            let targetCode = "";
+            if (!targetRow) {
+                if (selectedSeatsMap.size > 0) {
+                    const firstSeat = selectedSeatsMap.values().next().value;
+                    targetCode = firstSeat.code;
+                    targetRow = targetCode.charAt(0);
+                } else {
+                    targetRow = 'B';
+                }
+            }
+            updatePOVRow(targetRow, targetCode);
+            new bootstrap.Modal(document.getElementById('seatPovModal')).show();
+        }
+
+        function updatePOVRow(row, seatCode = "") {
+            const screenEl = document.getElementById('povScreenElement');
+            const fovEl = document.getElementById('povFovText');
+            const audioEl = document.getElementById('povAudioText');
+            const angleEl = document.getElementById('povAngleText');
+            const titleEl = document.getElementById('povSeatTitle');
+            const movieNameEl = document.getElementById('povMovieName');
+            const chairsFg = document.getElementById('povChairsForeground');
+
+            if (currentShow) {
+                movieNameEl.innerText = currentShow.movieTitle || 'Cinematic Preview';
+                const movieObj = MockService.movies.find(m => m.id === currentShow.movieId);
+                if (movieObj && movieObj.posterUrl) {
+                    screenEl.style.backgroundImage = `url('${movieObj.posterUrl}')`;
+                }
+            }
+
+            titleEl.innerText = seatCode ? `Simulated POV from Seat ${seatCode}` : `Simulated POV from Row ${row}`;
+
+            document.querySelectorAll('#povRowSwitchers button').forEach(btn => {
+                if (btn.innerText.startsWith(`Row ${row}`)) {
+                    btn.className = 'btn btn-cinema';
+                } else {
+                    btn.className = 'btn btn-outline-secondary';
+                }
+            });
+
+            if (row === 'A') {
+                screenEl.style.transform = 'scale(1.2) rotateX(-8deg)';
+                screenEl.style.height = '230px';
+                fovEl.innerText = '72Â° Ultra Immersive (Look-up)';
+                audioEl.innerText = 'High Center & Subwoofer Impact';
+                angleEl.innerText = '+25Â° Upward Tilt';
+                if (chairsFg) chairsFg.style.display = 'none';
+            } else if (row === 'B' || row === 'C') {
+                screenEl.style.transform = 'scale(1.0) rotateX(0deg)';
+                screenEl.style.height = '180px';
+                fovEl.innerText = '52Â° Director\'s Cut Sweetspot';
+                audioEl.innerText = '100% Balanced Dolby Atmos 7.1';
+                angleEl.innerText = '0Â° Direct Eye Level';
+                if (chairsFg) {
+                    chairsFg.style.display = 'flex';
+                    chairsFg.style.opacity = '0.5';
+                }
+            } else {
+                screenEl.style.transform = 'scale(0.85) rotateX(8deg)';
+                screenEl.style.height = '150px';
+                fovEl.innerText = '38Â° Wide Panoramic Balcony';
+                audioEl.innerText = 'Rear Surround Emphasis';
+                angleEl.innerText = '-12Â° Elevated Downward';
+                if (chairsFg) {
+                    chairsFg.style.display = 'flex';
+                    chairsFg.style.opacity = '0.85';
+                }
+            }
+        }
+</script>
 </body>
 </html>
 
