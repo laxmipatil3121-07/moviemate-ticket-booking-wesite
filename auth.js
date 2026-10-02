@@ -1,6 +1,50 @@
 /**
- * Authentication and Session Management
+ * Derives a human-friendly full name from an email address (e.g. bhavsarmohit53@gmail.com -> Bhavsar Mohit)
  */
+function extractNameFromEmail(email) {
+    if (!email || typeof email !== 'string') return 'User';
+    var raw = email.split('@')[0];
+    if (!raw) return 'User';
+    raw = raw.replace(/[._\-+]+/g, ' ');
+    var rawWords = raw.split(/\s+/);
+    var words = [];
+    for (var i = 0; i < rawWords.length; i++) {
+        var w = rawWords[i].replace(/\d+/g, '').replace(/^\s+|\s+$/g, '');
+        if (w) words.push(w);
+    }
+    if (words.length === 1) {
+        var str = words[0].toLowerCase();
+        var nameTokens = [
+            'bhavsar', 'mohit', 'rahul', 'sharma', 'patil', 'joshi', 'kumar', 'singh',
+            'gupta', 'verma', 'shah', 'mehta', 'khan', 'kapoor', 'reddy', 'roy',
+            'das', 'nair', 'rao', 'patel', 'yadav', 'mishra', 'shukla', 'aarav',
+            'sneha', 'pooja', 'amit', 'priya', 'ankit', 'sumit', 'vikas', 'sachin',
+            'aman', 'deepak', 'neha', 'kunal', 'varun', 'aditya', 'ayush', 'gaurav',
+            'manish', 'raj', 'rohan', 'vikram', 'ajay', 'vijay', 'sanjay', 'anil',
+            'sunil', 'ashok', 'alok', 'anand', 'saheb', 'kiran', 'swati', 'rohit'
+        ];
+        for (var j = 0; j < nameTokens.length; j++) {
+            var token = nameTokens[j];
+            if (str.indexOf(token) === 0 && str.length > token.length) {
+                var remainder = str.substring(token.length);
+                words = [token, remainder];
+                break;
+            } else if (str.length > token.length && str.indexOf(token) === str.length - token.length) {
+                var prefix = str.substring(0, str.length - token.length);
+                words = [prefix, token];
+                break;
+            }
+        }
+    }
+    var formattedArr = [];
+    for (var k = 0; k < words.length; k++) {
+        var wd = words[k];
+        formattedArr.push(wd.charAt(0).toUpperCase() + wd.substring(1).toLowerCase());
+    }
+    var res = formattedArr.join(' ');
+    return res || 'User';
+}
+
 try {
     if (localStorage.getItem('fullName') === 'undefined' || localStorage.getItem('fullName') === 'null') localStorage.removeItem('fullName');
     if (localStorage.getItem('email') === 'undefined' || localStorage.getItem('email') === 'null') localStorage.removeItem('email');
@@ -49,11 +93,23 @@ var Auth = window.Auth = {
         let em = localStorage.getItem('email');
         if (em === 'undefined' || em === 'null' || !em || em.trim() === '') em = null;
 
+        // Auto-fix: if old dummy 'Rahul Sharma' was stored for another user's email, replace with real derived name
+        if (em && fn === 'Rahul Sharma' && !em.toLowerCase().includes('rahul')) {
+            fn = extractNameFromEmail(em);
+            localStorage.setItem('fullName', fn);
+        }
+
+        // If fullName is missing but email is present, derive from email
+        if (!fn && em) {
+            fn = extractNameFromEmail(em);
+            localStorage.setItem('fullName', fn);
+        }
+
         return {
             token: localStorage.getItem('token'),
             email: em,
             fullName: fn,
-            role: localStorage.getItem('role') || 'User'
+            role: localStorage.getItem('role') || (em && em.includes('admin') ? 'Admin' : 'User')
         };
     },
 
@@ -117,13 +173,10 @@ var Auth = window.Auth = {
                 ? `<li class="nav-item"><a class="nav-link text-warning fw-bold" href="admin-dashboard.html"><i class="bi bi-speedometer2"></i> Admin Panel</a></li>`
                 : '';
 
-            // Clean display name and email without "undefined"
+            // Clean display name and email without "undefined" or unknown dummy names
             let displayName = user.fullName;
-            if (!displayName || displayName === 'undefined' || displayName === 'null' || displayName.trim() === '') {
-                displayName = user.email;
-            }
-            if (!displayName || displayName === 'undefined' || displayName === 'null' || displayName.trim() === '') {
-                displayName = 'Account';
+            if (!displayName || displayName === 'undefined' || displayName === 'null' || displayName.trim() === '' || (displayName === 'Rahul Sharma' && user.email && !user.email.toLowerCase().includes('rahul'))) {
+                displayName = user.email ? extractNameFromEmail(user.email) : 'Account';
             }
 
             let displayEmail = user.email;

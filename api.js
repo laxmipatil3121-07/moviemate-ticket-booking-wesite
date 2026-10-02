@@ -39,6 +39,53 @@ async function apiCall(endpoint, method = 'GET', body = null, requiresAuth = fal
 }
 
 /**
+ * Derives a human-friendly full name from an email address (e.g. bhavsarmohit53@gmail.com -> Bhavsar Mohit)
+ */
+function extractNameFromEmail(email) {
+    if (!email || typeof email !== 'string') return 'User';
+    var raw = email.split('@')[0];
+    if (!raw) return 'User';
+    raw = raw.replace(/[._\-+]+/g, ' ');
+    var rawWords = raw.split(/\s+/);
+    var words = [];
+    for (var i = 0; i < rawWords.length; i++) {
+        var w = rawWords[i].replace(/\d+/g, '').replace(/^\s+|\s+$/g, '');
+        if (w) words.push(w);
+    }
+    if (words.length === 1) {
+        var str = words[0].toLowerCase();
+        var nameTokens = [
+            'bhavsar', 'mohit', 'rahul', 'sharma', 'patil', 'joshi', 'kumar', 'singh',
+            'gupta', 'verma', 'shah', 'mehta', 'khan', 'kapoor', 'reddy', 'roy',
+            'das', 'nair', 'rao', 'patel', 'yadav', 'mishra', 'shukla', 'aarav',
+            'sneha', 'pooja', 'amit', 'priya', 'ankit', 'sumit', 'vikas', 'sachin',
+            'aman', 'deepak', 'neha', 'kunal', 'varun', 'aditya', 'ayush', 'gaurav',
+            'manish', 'raj', 'rohan', 'vikram', 'ajay', 'vijay', 'sanjay', 'anil',
+            'sunil', 'ashok', 'alok', 'anand', 'saheb', 'kiran', 'swati', 'rohit'
+        ];
+        for (var j = 0; j < nameTokens.length; j++) {
+            var token = nameTokens[j];
+            if (str.indexOf(token) === 0 && str.length > token.length) {
+                var remainder = str.substring(token.length);
+                words = [token, remainder];
+                break;
+            } else if (str.length > token.length && str.indexOf(token) === str.length - token.length) {
+                var prefix = str.substring(0, str.length - token.length);
+                words = [prefix, token];
+                break;
+            }
+        }
+    }
+    var formattedArr = [];
+    for (var k = 0; k < words.length; k++) {
+        var wd = words[k];
+        formattedArr.push(wd.charAt(0).toUpperCase() + wd.substring(1).toLowerCase());
+    }
+    var res = formattedArr.join(' ');
+    return res || 'User';
+}
+
+/**
  * Embedded Mock Data Service (Ensures 100% functionality on GitHub Pages, Vercel & Offline)
  */
 const MockService = {
@@ -376,7 +423,9 @@ const MockService = {
         if (clean === '/auth/login' || clean === '/auth/register') {
             const email = body?.email || 'user@movieticket.com';
             const role = email.includes('admin') ? 'Admin' : 'User';
-            const name = body?.fullName || (role === 'Admin' ? 'System Administrator' : 'Rahul Sharma');
+            const name = (body?.fullName && body.fullName.trim() !== '' && body.fullName !== 'undefined')
+                ? body.fullName.trim()
+                : (role === 'Admin' ? 'System Administrator' : extractNameFromEmail(email));
             return {
                 token: 'mock-jwt-token-preview',
                 email: email,
