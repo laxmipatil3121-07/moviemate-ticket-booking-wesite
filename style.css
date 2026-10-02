@@ -120,15 +120,36 @@ h1, h2, h3, .navbar-brand, .hero-banner h1 {
     filter: drop-shadow(0 0 8px rgba(255, 11, 55, 0.8));
 }
 
+.navbar-nav {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    gap: 4px;
+}
+
 .nav-link {
     color: #cbd5e1 !important;
     font-weight: 600;
     font-size: 0.95rem;
-    margin: 0 0.35rem;
-    padding: 0.45rem 0.9rem !important;
+    margin: 0 0.25rem;
+    padding: 0.45rem 0.85rem !important;
     border-radius: 8px;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
+    display: inline-flex !important;
+    align-items: center !important;
+    flex-direction: row !important;
+    gap: 6px !important;
+    white-space: nowrap !important;
+    line-height: 1 !important;
+}
+
+.nav-link i {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1rem;
+    margin: 0 !important;
 }
 
 .nav-link:hover {
@@ -142,6 +163,89 @@ h1, h2, h3, .navbar-brand, .hero-banner h1 {
     background: linear-gradient(135deg, rgba(255, 11, 55, 0.2), rgba(124, 58, 237, 0.2));
     border: 1px solid rgba(255, 11, 55, 0.35);
     box-shadow: 0 0 15px rgba(255, 11, 55, 0.25);
+}
+
+/* Round / Pill Shape Navbar Search Bar */
+.search-pill-wrapper {
+    position: relative;
+    width: 280px;
+    max-width: 100%;
+}
+
+.search-pill-box {
+    display: flex;
+    align-items: center;
+    background: rgba(18, 25, 41, 0.85);
+    border: 1.5px solid rgba(255, 255, 255, 0.16);
+    border-radius: 50px !important; /* Fully Round Pill Shape */
+    padding: 6px 16px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.search-pill-box:focus-within {
+    border-color: #ff0b37;
+    background: rgba(24, 33, 54, 0.95);
+    box-shadow: 0 0 18px rgba(255, 11, 55, 0.35), inset 0 1px 3px rgba(0, 0, 0, 0.5);
+    transform: scale(1.02);
+}
+
+.search-pill-icon {
+    color: #ff0b37;
+    font-size: 0.95rem;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.search-pill-input {
+    background: transparent !important;
+    border: none !important;
+    color: #f8fafc !important;
+    font-size: 0.88rem;
+    font-weight: 500;
+    width: 100%;
+    outline: none !important;
+    box-shadow: none !important;
+    padding: 0;
+}
+
+.search-pill-input::placeholder {
+    color: #94a3b8;
+    font-weight: 400;
+}
+
+/* Round shape for default Bootstrap input-group */
+.navbar-custom .input-group {
+    border-radius: 50px !important;
+    overflow: hidden;
+    background: rgba(18, 25, 41, 0.85);
+    border: 1.5px solid rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+    transition: all 0.25s ease;
+}
+
+.navbar-custom .input-group:focus-within {
+    border-color: #ff0b37;
+    box-shadow: 0 0 15px rgba(255, 11, 55, 0.35);
+}
+
+.navbar-custom .input-group input {
+    border: none !important;
+    background: transparent !important;
+    border-radius: 50px 0 0 50px !important;
+    box-shadow: none !important;
+    padding-left: 16px;
+    color: #f8fafc !important;
+}
+
+.navbar-custom .input-group .input-group-text {
+    border: none !important;
+    background: transparent !important;
+    border-radius: 0 50px 50px 0 !important;
+    color: #ff0b37 !important;
+    padding-right: 16px;
 }
 
 /* ==========================================================================

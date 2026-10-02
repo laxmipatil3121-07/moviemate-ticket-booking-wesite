@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -556,12 +556,30 @@ const MockService = {
 /**
  * Authentication and Session Management
  */
-const Auth = {
+try {
+    if (localStorage.getItem('fullName') === 'undefined' || localStorage.getItem('fullName') === 'null') localStorage.removeItem('fullName');
+    if (localStorage.getItem('email') === 'undefined' || localStorage.getItem('email') === 'null') localStorage.removeItem('email');
+    if (localStorage.getItem('role') === 'undefined' || localStorage.getItem('role') === 'null') localStorage.removeItem('role');
+} catch(e) {}
+
+var Auth = window.Auth = {
     saveSession(token, email, fullName, role) {
-        localStorage.setItem('token', token);
-        localStorage.setItem('email', email);
-        localStorage.setItem('fullName', fullName);
-        localStorage.setItem('role', role);
+        localStorage.setItem('token', token || 'mock_jwt_token_12345');
+        if (email && email !== 'undefined' && email !== 'null' && String(email).trim() !== '') {
+            localStorage.setItem('email', email);
+        } else {
+            localStorage.removeItem('email');
+        }
+        if (fullName && fullName !== 'undefined' && fullName !== 'null' && String(fullName).trim() !== '') {
+            localStorage.setItem('fullName', fullName);
+        } else {
+            localStorage.removeItem('fullName');
+        }
+        if (role && role !== 'undefined' && role !== 'null' && String(role).trim() !== '') {
+            localStorage.setItem('role', role);
+        } else {
+            localStorage.removeItem('role');
+        }
     },
 
     clearSession() {
@@ -580,11 +598,17 @@ const Auth = {
     },
 
     getUser() {
+        let fn = localStorage.getItem('fullName');
+        if (!fn || fn === 'undefined' || fn === 'null' || fn.trim() === '') fn = null;
+
+        let em = localStorage.getItem('email');
+        if (!em || em === 'undefined' || em === 'null' || em.trim() === '') em = null;
+
         return {
             token: localStorage.getItem('token'),
-            email: localStorage.getItem('email'),
-            fullName: localStorage.getItem('fullName'),
-            role: localStorage.getItem('role')
+            email: em,
+            fullName: fn,
+            role: localStorage.getItem('role') || 'User'
         };
     },
 
@@ -648,6 +672,20 @@ const Auth = {
                 ? `<li class="nav-item"><a class="nav-link text-warning fw-bold" href="admin-dashboard.html"><i class="bi bi-speedometer2"></i> Admin Panel</a></li>`
                 : '';
 
+            // Clean display name and email without "undefined"
+            let displayName = user.fullName;
+            if (!displayName || displayName === 'undefined' || displayName === 'null' || displayName.trim() === '') {
+                displayName = user.email;
+            }
+            if (!displayName || displayName === 'undefined' || displayName === 'null' || displayName.trim() === '') {
+                displayName = 'Account';
+            }
+
+            let displayEmail = user.email;
+            if (!displayEmail || displayEmail === 'undefined' || displayEmail === 'null' || displayEmail.trim() === '') {
+                displayEmail = 'user@movieticket.com';
+            }
+
             navAuth.innerHTML = `
                 ${citySelectorHtml}
                 ${adminLink}
@@ -656,10 +694,10 @@ const Auth = {
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle text-light" href="#" id="userDrop" role="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle text-danger"></i> ${user.fullName || user.email}
+                        <i class="bi bi-person-circle text-danger"></i> ${displayName}
                     </a>
                     <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
-                        <li><span class="dropdown-item-text text-muted small">${user.email} (${user.role})</span></li>
+                        <li><span class="dropdown-item-text text-muted small">${displayEmail} (${user.role || 'User'})</span></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="watchlist.html"><i class="bi bi-bookmark-heart text-danger"></i> My Watchlist</a></li>
                         <li><a class="dropdown-item" href="compare.html"><i class="bi bi-arrow-left-right text-info"></i> Compare Movies</a></li>
