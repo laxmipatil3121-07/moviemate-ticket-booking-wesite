@@ -350,8 +350,22 @@ const MockService = {
         if (clean.startsWith('/shows/')) {
             const showId = parseInt(clean.replace('/shows/', ''));
             if (!isNaN(showId)) {
-                const allShows = MockService.getShows();
-                return allShows.find(s => s.id === showId || s.showId === showId) || allShows[0];
+                let targetMId = null;
+                if (endpoint.includes('movieId=')) {
+                    targetMId = parseInt(endpoint.split('movieId=')[1]);
+                } else if (typeof window !== 'undefined') {
+                    const u = new URLSearchParams(window.location.search);
+                    targetMId = u.get('movieId') || sessionStorage.getItem('currentBookingMovieId');
+                }
+                const allShows = MockService.getShows(targetMId);
+                let show = allShows.find(s => s.id === showId || s.showId === showId) || allShows[0];
+                if (targetMId) {
+                    const mObj = MockService.movies.find(m => m.id === parseInt(targetMId));
+                    if (mObj) {
+                        show = { ...show, movieId: mObj.id, movieTitle: mObj.title, moviePosterUrl: mObj.posterUrl };
+                    }
+                }
+                return show;
             }
         }
         if (clean === '/shows') {

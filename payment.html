@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -737,8 +737,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (document.getElementById('counter-tab').classList.contains('active')) method = 'Counter';
 
             const payload = {
-                showId: bookingData.show.id,
+                showId: bookingData.show.id || bookingData.show.showId,
                 seatIds: bookingData.seatIds,
+                movieTitle: bookingData.show.movieTitle,
+                theatreName: bookingData.show.theatreName,
+                screenName: bookingData.show.screenName,
+                seats: bookingData.seatCodes,
+                totalAmount: bookingData.totalAmount,
                 paymentMethod: method
             };
 

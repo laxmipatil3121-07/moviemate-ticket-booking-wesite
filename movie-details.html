@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -724,6 +724,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const release = new Date(m.releaseDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
             const currentCity = Auth.getCity();
 
+            try {
+                sessionStorage.setItem('currentBookingMovieId', String(m.id));
+                sessionStorage.setItem('currentBookingMovieTitle', m.title);
+                sessionStorage.setItem('currentBookingMoviePoster', m.posterUrl);
+            } catch(e) {}
+
             let allShows = m.availableShows || m.shows || [];
             if (!allShows || allShows.length === 0) {
                 // If backend has no showtimes yet, generate live cinema shows for this movie in Jalgaon
@@ -755,6 +761,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 showsByTheatre[tName].shows.push({
                     ...s,
                     showId: s.showId || s.id || 101,
+                    movieId: m.id,
+                    movieTitle: m.title,
+                    moviePosterUrl: m.posterUrl,
                     screenName: s.screenName || 'Screen 1',
                     basePrice: s.basePrice || 200,
                     startTime: s.startTime || '18:30:00',
@@ -774,10 +783,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 const timeStr = s.startTime.substring(0, 5);
                                 const showDateStr = new Date(s.showDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                                 return `
-                                    <a href="seat-selection.html?showId=${s.showId}" class="btn btn-outline-light btn-sm text-start p-2 px-3 border-secondary position-relative" style="border-radius: 8px;">
+                                    <a href="seat-selection.html?showId=${s.showId}&movieId=${m.id}" onclick="try{sessionStorage.setItem('currentBookingMovieId','${m.id}');sessionStorage.setItem('currentBookingMovieTitle','${m.title.replace(/'/g, "\\'")}');sessionStorage.setItem('currentBookingMoviePoster','${m.posterUrl}');}catch(e){}" class="btn btn-outline-light btn-sm text-start p-2 px-3 border-secondary position-relative" style="border-radius: 8px;">
                                         <div class="d-flex justify-content-between align-items-center gap-2">
                                             <div class="fw-bold text-warning">${timeStr}</div>
-                                            <span class="badge bg-success bg-opacity-25 text-success border border-success" style="font-size: 0.65rem;">ðŸŸ¢ Live BoxOffice</span>
+                                            <span class="badge bg-success bg-opacity-25 text-success border border-success d-inline-flex align-items-center gap-1" style="font-size: 0.65rem;"><i class="bi bi-circle-fill text-success" style="font-size: 0.5rem;"></i> Live BoxOffice</span>
                                         </div>
                                         <div class="small text-muted">${showDateStr}  •  ${s.screenName}</div>
                                         <div class="small text-success fw-bold">₹${s.basePrice.toFixed(0)}</div>

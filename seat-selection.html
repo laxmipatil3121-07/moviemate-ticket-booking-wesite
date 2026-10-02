@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -508,8 +508,22 @@ const MockService = {
         if (clean.startsWith('/shows/')) {
             const showId = parseInt(clean.replace('/shows/', ''));
             if (!isNaN(showId)) {
-                const allShows = MockService.getShows();
-                return allShows.find(s => s.id === showId || s.showId === showId) || allShows[0];
+                let targetMId = null;
+                if (endpoint.includes('movieId=')) {
+                    targetMId = parseInt(endpoint.split('movieId=')[1]);
+                } else if (typeof window !== 'undefined') {
+                    const u = new URLSearchParams(window.location.search);
+                    targetMId = u.get('movieId') || sessionStorage.getItem('currentBookingMovieId');
+                }
+                const allShows = MockService.getShows(targetMId);
+                let found = allShows.find(s => s.id === showId || s.showId === showId) || allShows[0];
+                if (targetMId) {
+                    const mObj = MockService.movies.find(m => m.id === parseInt(targetMId));
+                    if (mObj) {
+                        found = { ...found, movieId: mObj.id, movieTitle: mObj.title, moviePosterUrl: mObj.posterUrl };
+                    }
+                }
+                return found;
             }
         }
         if (clean === '/shows') {
@@ -752,6 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const urlParams = new URLSearchParams(window.location.search);
             showId = urlParams.get('showId');
+            const movieId = urlParams.get('movieId') || sessionStorage.getItem('currentBookingMovieId');
 
             if (!showId) {
                 window.location.href = 'movies.html';
@@ -759,7 +774,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
-                currentShow = await apiCall(`/shows/${showId}`);
+                currentShow = await apiCall(`/shows/${showId}${movieId ? '?movieId=' + movieId : ''}`);
+                
+                // Ensure currentShow ALWAYS matches the chosen movie if movieId exists
+                if (movieId) {
+                    const targetM = MockService.movies.find(x => x.id === parseInt(movieId));
+                    if (targetM) {
+                        currentShow.movieId = targetM.id;
+                        currentShow.movieTitle = targetM.title;
+                        currentShow.moviePosterUrl = targetM.posterUrl;
+                        try {
+                            sessionStorage.setItem('currentBookingMovieId', String(targetM.id));
+                            sessionStorage.setItem('currentBookingMovieTitle', targetM.title);
+                            sessionStorage.setItem('currentBookingMoviePoster', targetM.posterUrl);
+                        } catch(e) {}
+                    }
+                }
+
                 liveGatewayData = await apiCall(`/shows/${showId}/live-status`);
                 allSeatsList = liveGatewayData.seats || [];
 
