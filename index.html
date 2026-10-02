@@ -7,298 +7,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="style.css">
-    <style>
-:root {
-    --primary-color: #e50914;
-    --primary-hover: #b80710;
-    --dark-bg: #0b0f19;
-    --card-bg: #151c2e;
-    --card-border: #232d42;
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --accent-gold: #f59e0b;
-    --seat-available: #334155;
-    --seat-selected: #10b981;
-    --seat-booked: #ef4444;
-}
-
-body {
-    background-color: var(--dark-bg);
-    color: var(--text-main);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-    width: 8px;
-}
-::-webkit-scrollbar-track {
-    background: #0f172a;
-}
-::-webkit-scrollbar-thumb {
-    background: #334155;
-    border-radius: 4px;
-}
-
-/* Navbar */
-.navbar-custom {
-    background-color: rgba(11, 15, 25, 0.95);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--card-border);
-    padding: 0.8rem 0;
-}
-
-.navbar-brand {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--primary-color) !important;
-    letter-spacing: 0.5px;
-}
-
-.nav-link {
-    color: #cbd5e1 !important;
-    font-weight: 500;
-    margin: 0 0.3rem;
-    transition: color 0.2s;
-}
-
-.nav-link:hover, .nav-link.active {
-    color: var(--primary-color) !important;
-}
-
-/* Hero Section with Avengers Cinematic Theme */
-.hero-banner {
-    position: relative;
-    background: linear-gradient(180deg, rgba(11, 15, 25, 0.72) 0%, rgba(11, 15, 25, 0.88) 65%, var(--dark-bg) 100%),
-                url('https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=1600&q=80') no-repeat center center / cover;
-    padding: 6.5rem 0 4.5rem 0;
-    border-bottom: 1px solid var(--card-border);
-    box-shadow: inset 0 -35px 50px rgba(11, 15, 25, 0.95);
-    overflow: hidden;
-}
-
-.hero-banner h1 {
-    text-shadow: 0 4px 25px rgba(0, 0, 0, 0.9);
-    letter-spacing: -0.5px;
-}
-
-.hero-banner p {
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.95);
-}
-
-.hero-avengers-badge {
-    background: linear-gradient(90deg, #e50914, #7c3aed);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    box-shadow: 0 0 15px rgba(229, 9, 20, 0.5);
-}
-
-/* Movie Cards */
-.movie-card {
-    background-color: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 12px;
-    overflow: hidden;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-.movie-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 24px rgba(229, 9, 20, 0.2);
-    border-color: #3b4866;
-}
-
-.movie-poster {
-    height: 340px;
-    object-fit: cover;
-    width: 100%;
-    background-color: #1e293b;
-}
-
-.movie-card .card-body {
-    padding: 1.25rem;
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-}
-
-.movie-card .badge-rating {
-    background-color: rgba(245, 158, 11, 0.15);
-    color: var(--accent-gold);
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    font-weight: 600;
-}
-
-.badge-genre {
-    background-color: #1e293b;
-    color: #94a3b8;
-    font-size: 0.75rem;
-    margin-right: 0.3rem;
-    margin-bottom: 0.3rem;
-    display: inline-block;
-}
-
-/* Buttons */
-.btn-cinema {
-    background-color: var(--primary-color);
-    color: #fff;
-    border: none;
-    font-weight: 600;
-    padding: 0.6rem 1.2rem;
-    border-radius: 8px;
-    transition: background-color 0.2s, transform 0.1s;
-}
-
-.btn-cinema:hover {
-    background-color: var(--primary-hover);
-    color: #fff;
-}
-
-.btn-cinema-outline {
-    background: transparent;
-    color: var(--text-main);
-    border: 1px solid var(--card-border);
-    font-weight: 500;
-    border-radius: 8px;
-}
-
-.btn-cinema-outline:hover {
-    background: #1e293b;
-    color: #fff;
-    border-color: #475569;
-}
-
-/* Seat Selection Grid */
-.screen-indicator {
-    width: 80%;
-    height: 8px;
-    background: linear-gradient(90deg, transparent, #38bdf8, transparent);
-    margin: 2rem auto 0.5rem auto;
-    border-radius: 50%;
-    box-shadow: 0 4px 15px rgba(56, 189, 248, 0.5);
-}
-
-.seat {
-    width: 34px;
-    height: 32px;
-    border-radius: 6px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 600;
-    cursor: pointer;
-    user-select: none;
-    transition: transform 0.15s ease, background-color 0.15s;
-    margin: 4px;
-}
-
-.seat.available {
-    background-color: var(--seat-available);
-    color: #cbd5e1;
-    border: 1px solid #475569;
-}
-
-.seat.available:hover {
-    background-color: #475569;
-    transform: scale(1.1);
-}
-
-.seat.selected {
-    background-color: var(--seat-selected) !important;
-    color: #fff !important;
-    border: 1px solid #059669 !important;
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
-}
-
-.seat.booked {
-    background-color: #241416 !important;
-    color: #64748b !important;
-    border: 1px solid #451a1e !important;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-/* Footer */
-footer {
-    margin-top: auto;
-    background-color: #080c14;
-    border-top: 1px solid var(--card-border);
-    padding: 2rem 0;
-    color: var(--text-muted);
-}
-
-/* Cinema Live Sync Keyframes */
-@keyframes spinSync {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-.spin-animation {
-    animation: spinSync 0.8s linear infinite;
-    display: inline-block;
-}
-
-.live-pulse-badge {
-    box-shadow: 0 0 12px rgba(34, 197, 94, 0.4);
-}
-
-</style>
-    <style>
-        .mood-btn {
-            background-color: #1e293b;
-            color: #cbd5e1;
-            border: 1px solid #334155;
-            border-radius: 50px;
-            padding: 0.5rem 1.2rem;
-            font-size: 0.9rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .mood-btn:hover, .mood-btn.active {
-            background-color: #e50914;
-            color: #fff;
-            border-color: #e50914;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
-        }
-        .search-suggestions-box {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: #111827;
-            border: 1px solid #374151;
-            border-radius: 8px;
-            max-height: 320px;
-            overflow-y: auto;
-            z-index: 1050;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.7);
-        }
-        .suggestion-item {
-            padding: 0.6rem 1rem;
-            border-bottom: 1px solid #1f2937;
-            cursor: pointer;
-            transition: background 0.15s;
-            text-decoration: none;
-            display: block;
-            color: #f3f4f6;
-        }
-        .suggestion-item:hover {
-            background: #1f2937;
-            color: #e50914;
-        }
-    </style>
 </head>
 <body data-bs-theme="dark">
 
@@ -334,7 +42,22 @@ footer {
         </div>
     </nav>
 
-    <!-- Hero Banner with Avengers Cinematic Backdrop -->
+    <!-- Crazy Live Cinema Ticker -->
+    <div class="cinema-live-ticker py-2 border-bottom border-secondary border-opacity-10 d-none d-md-block" style="background: rgba(14, 19, 31, 0.7); backdrop-filter: blur(12px); font-size: 0.82rem; z-index: 1020; position: relative;">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-danger rounded-pill px-2 py-1"><i class="bi bi-broadcast"></i> LIVE</span>
+                <span class="text-light"><strong class="text-danger">2,418</strong> Movie Lovers Online</span>
+                <span class="text-secondary">&bull;</span>
+                <span class="text-muted"><i class="bi bi-shield-check text-success"></i> 100% Instant E-Tickets</span>
+            </div>
+            <div class="d-flex align-items-center gap-3 text-secondary">
+                <span class="text-warning"><i class="bi bi-dice-5-fill"></i> Spin Wheel to Win &#8377;100 Discount</span>
+                <span>&bull;</span>
+                <span class="text-info"><i class="bi bi-command"></i> Press <kbd class="bg-dark text-light border border-secondary px-1 py-0 rounded">Ctrl+K</kbd> to Spotlight Search</span>
+            </div>
+        </div>
+    </div>
     <header class="hero-banner text-center text-light">
         <div class="container position-relative" style="z-index: 2;">
             <span class="badge hero-avengers-badge mb-3 px-3 py-2 text-uppercase tracking-wider">
@@ -1198,6 +921,8 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
     </div>
     <script src="spin-wheel.js"></script>
+    <!-- MovieMate Crazy UI Interactive Engine -->
+    <script src="crazy-ui.js"></script>
 </body>
 </html>
 
