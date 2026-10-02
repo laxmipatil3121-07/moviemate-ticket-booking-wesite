@@ -41,23 +41,6 @@
             </div>
         </div>
     </nav>
-
-    <!-- Crazy Live Cinema Ticker -->
-    <div class="cinema-live-ticker py-2 border-bottom border-secondary border-opacity-10 d-none d-md-block" style="background: rgba(14, 19, 31, 0.7); backdrop-filter: blur(12px); font-size: 0.82rem; z-index: 1020; position: relative;">
-        <div class="container d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center gap-3">
-                <span class="badge bg-danger rounded-pill px-2 py-1"><i class="bi bi-broadcast"></i> LIVE</span>
-                <span class="text-light"><strong class="text-danger">2,418</strong> Movie Lovers Online</span>
-                <span class="text-secondary">&bull;</span>
-                <span class="text-muted"><i class="bi bi-shield-check text-success"></i> 100% Instant E-Tickets</span>
-            </div>
-            <div class="d-flex align-items-center gap-3 text-secondary">
-                <span class="text-warning"><i class="bi bi-dice-5-fill"></i> Spin Wheel to Win &#8377;100 Discount</span>
-                <span>&bull;</span>
-                <span class="text-info"><i class="bi bi-command"></i> Press <kbd class="bg-dark text-light border border-secondary px-1 py-0 rounded">Ctrl+K</kbd> to Spotlight Search</span>
-            </div>
-        </div>
-    </div>
     <header class="hero-banner text-center text-light">
         <div class="container position-relative" style="z-index: 2;">
             <span class="badge hero-avengers-badge mb-3 px-3 py-2 text-uppercase tracking-wider">
@@ -76,21 +59,6 @@
 
     <!-- Main Content -->
     <main class="container my-5">
-        <!-- Lucky Wheel Promotional Banner -->
-        <div class="card bg-dark border-danger mb-4 shadow-lg overflow-hidden" style="background: linear-gradient(135deg, rgba(229,9,20,0.18) 0%, rgba(124,58,237,0.18) 100%);">
-            <div class="card-body p-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
-                <div class="d-flex align-items-center gap-3">
-                    <span style="font-size: 2.5rem;">ðŸŽ¡</span>
-                    <div>
-                        <h4 class="fw-bold text-light mb-1"><span class="badge bg-warning text-dark me-2">NEW</span>Daily Lucky Spin &amp; Win!</h4>
-                        <p class="text-secondary small mb-0">Spin the wheel to unlock instant promo codes: Flat ₹75 OFF, 20% Discount, or Free Popcorn Combos!</p>
-                    </div>
-                </div>
-                <button class="btn btn-cinema px-4 py-2 fw-bold" onclick="openSpinWheelModal()">
-                    <i class="bi bi-gift-fill me-1"></i> Spin Wheel Now
-                </button>
-            </div>
-        </div>
 
         <!-- UNIQUE FEATURE 2: MOOD-BASED MOVIE DISCOVERY -->
         <section id="moodSection" class="mb-5 p-4 rounded-4 bg-dark border border-secondary shadow">
@@ -883,8 +851,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     </script>
     <script src="cinebot.js"></script>
-    <button class="spin-floating-trigger" id="btnOpenSpinWheel" onclick="openSpinWheelModal()" title="Spin the Wheel to win discounts!">
-        <span class="fs-5">ðŸŽ¡</span> Spin &amp; Win!
+    <button class="spin-floating-trigger shadow-lg" id="btnOpenSpinWheel" onclick="openSpinWheelModal()" title="Spin the Wheel to win discounts!">
+        <i class="bi bi-gift-fill fs-5"></i> <span>Spin &amp; Win!</span>
     </button>
     <!-- Lucky Spin the Wheel Modal -->
     <div class="modal fade" id="spinWheelModal" tabindex="-1" aria-hidden="true">
@@ -892,7 +860,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="modal-content bg-dark border-danger shadow-lg">
                 <div class="modal-header border-secondary">
                     <div class="d-flex align-items-center gap-2">
-                        <span class="fs-4">ðŸŽ¡</span>
+                        <i class="bi bi-dice-5-fill text-warning fs-3"></i>
                         <div>
                             <h5 class="modal-title fw-bold text-light mb-0">Lucky Cinema Spin Wheel</h5>
                             <div class="text-muted small">Spin to unlock guaranteed discount promo codes!</div>

@@ -389,113 +389,12 @@
     }
 
     // --------------------------------------------------------------------------
-    // 6. Floating Cyber Action Dock
-    // --------------------------------------------------------------------------
-    function initCyberDock() {
-        if (document.getElementById('cyberDock')) return;
-
-        const dockHtml = `
-        <div id="cyberDock" class="cyber-dock">
-            <button id="dockSearchBtn" class="cyber-dock-item" title="Quick Search (Ctrl + K)">
-                <i class="bi bi-search"></i>
-                <span class="dock-label">Search</span>
-                <span class="dock-kbd">⌘K</span>
-            </button>
-
-            <button id="dockSpinBtn" class="cyber-dock-item highlight-gold" title="Spin The Lucky Wheel">
-                <i class="bi bi-dice-5-fill"></i>
-                <span class="dock-label">Lucky Spin</span>
-                <span class="dock-badge">Win ₹100</span>
-            </button>
-
-            <button id="dockCineBotBtn" class="cyber-dock-item highlight-purple" title="AI Cinema Matchmaker">
-                <i class="bi bi-robot"></i>
-                <span class="dock-label">CineBot AI</span>
-                <span class="dock-pulse-dot"></span>
-            </button>
-
-            <button id="dockPovBtn" class="cyber-dock-item" title="Seat 3D POV Simulator">
-                <i class="bi bi-badge-3d-fill"></i>
-                <span class="dock-label">3D Seat POV</span>
-            </button>
-
-            <button id="dockSoundBtn" class="cyber-dock-item ${sfxEnabled ? 'sound-active' : ''}" title="Toggle Futuristic SFX Audio">
-                <i class="bi ${sfxEnabled ? 'bi-volume-up-fill text-success' : 'bi-volume-mute text-secondary'}"></i>
-                <span class="dock-label">${sfxEnabled ? 'SFX ON' : 'SFX OFF'}</span>
-            </button>
-        </div>
-        `;
-
-        document.body.insertAdjacentHTML('beforeend', dockHtml);
-
-        document.getElementById('dockSearchBtn').addEventListener('click', () => {
-            if (window.openSpotlight) window.openSpotlight();
-        });
-
-        document.getElementById('dockSpinBtn').addEventListener('click', () => {
-            SoundFX.click();
-            if (typeof window.openSpinWheelModal === 'function') {
-                window.openSpinWheelModal();
-            } else {
-                const spinTrigger = document.getElementById('spinFloatingTrigger');
-                if (spinTrigger) spinTrigger.click();
-                else window.location.href = 'index.html#spinWheel';
-            }
-        });
-
-        document.getElementById('dockCineBotBtn').addEventListener('click', () => {
-            SoundFX.click();
-            const botBtn = document.getElementById('cineBotFloatingBtn');
-            if (botBtn) {
-                botBtn.click();
-            } else {
-                window.location.href = 'index.html#cineBot';
-            }
-        });
-
-        document.getElementById('dockPovBtn').addEventListener('click', () => {
-            SoundFX.click();
-            if (typeof window.openSeatPovModal === 'function') {
-                window.openSeatPovModal();
-            } else {
-                const povBtn = document.querySelector('[data-bs-target="#seatPovModal"]');
-                if (povBtn) povBtn.click();
-                else window.location.href = 'seat-selection.html?showId=1';
-            }
-        });
-
-        const soundBtn = document.getElementById('dockSoundBtn');
-        soundBtn.addEventListener('click', () => {
-            sfxEnabled = !sfxEnabled;
-            localStorage.setItem('moviemate_sfx', sfxEnabled);
-
-            const icon = soundBtn.querySelector('i');
-            const label = soundBtn.querySelector('.dock-label');
-
-            if (sfxEnabled) {
-                soundBtn.classList.add('sound-active');
-                icon.className = 'bi bi-volume-up-fill text-success';
-                label.textContent = 'SFX ON';
-                SoundFX.success();
-            } else {
-                soundBtn.classList.remove('sound-active');
-                icon.className = 'bi bi-volume-mute text-secondary';
-                label.textContent = 'SFX OFF';
-            }
-        });
-
-        document.querySelectorAll('.cyber-dock-item').forEach(item => {
-            item.addEventListener('mouseenter', () => SoundFX.hover());
-        });
-    }
-
-    // --------------------------------------------------------------------------
-    // 7. Attach Interactive Sound on Standard UI Buttons
+    // 6. Attach Interactive Sound on Standard UI Buttons
     // --------------------------------------------------------------------------
     function initGlobalAudioHooks() {
         document.addEventListener('click', (e) => {
             const target = e.target.closest('button, .btn, .nav-link, .mood-btn, .seat.available, .seat.selected');
-            if (target && !target.closest('#dockSoundBtn')) {
+            if (target) {
                 SoundFX.click();
             }
         }, { passive: true });
@@ -509,7 +408,6 @@
         initMouseSpotlight();
         init3DCardTilt();
         initSpotlightModal();
-        initCyberDock();
         initGlobalAudioHooks();
     }
 
